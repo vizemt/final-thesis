@@ -1,24 +1,85 @@
-# Nestjs specific
-/dist
-/node_modules
-/build
-/tmp
-
-# Logs
-logs
-*.log
+# Dependencies
+node_modules/
 npm-debug.log*
-pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
+.pnp/
+.pnp.js
+.yarn/
 
-# dotenv environment variable files
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# Environment variables
 .env
-.env.development
-.env.test
-.env.production
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# temp directory
-.temp
-.tmp
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+logs/
+
+# Package manager specific
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Optional babel cache
+.babelcache
+
+# Optional REPL history
+.node_repl_history
+
+# Optional production cache
+.cache/
+
+# Optional misc
+*.pid
+*.seed
+*.pid.lock
+
+# Optional compiled output
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.pyc
+
+# Optional config files
+*.config.js
