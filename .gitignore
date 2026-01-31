@@ -83,3 +83,6 @@ pnpm-lock.yaml
 
 # Optional config files
 *.config.js
+
+# My notes
+notesForMe.txt

@@ -1,0 +1,2 @@
+for the very begining - a simple veb image editor https://codepen.io/dcode-software/pen/qBxJdJQ
+todo - investigate <canvas>
