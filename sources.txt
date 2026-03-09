@@ -1,2 +1,14 @@
-for the very begining - a simple veb image editor https://codepen.io/dcode-software/pen/qBxJdJQ
+1. for the very begining - a simple veb image editor https://codepen.io/dcode-software/pen/qBxJdJQ
+2. editor on konva.js - https://codesandbox.io/p/sandbox/github/polotno-project/polotno-site/tree/source/examples/polotno-demo?file=%2Fnode_modules%2F.store%2Fpolotno%402.32.0%2Fnode_modules%2Fpolotno%2Fcanvas%2Fworkspace-canvas.d.ts%3A19%2C34&from-embed
+3. https://codesandbox.io/embed/github/polotno-project/polotno-site/tree/source/examples/polotno-demo?fontsize=11&hidenavigation=1&theme=dark&view=preview
+4. https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement
+5. IFM - Exploring Interactivity in Digital Comics - https://journals.library.torontomu.ca/index.php/InteractiveFilmMedia/article/view/1687
+6. “Enhanced Webcomics1”: An Exploration of the Hybrid Form of Comics on the Digital Medium - https://www.risejournal.eu/index.php/imagenarrative/article/view/1384
+7. On the Pleasure of Coding Interface Narratives - https://www.comicsgrid.com/article/id/3563/
+8. Termins - https://disima.ru/sozdanie-komiksa/terminy-kotorye-dolzhen-znat-kazhdyj-komiksist/
+https://www.howtolovecomics.com/comic-book-glossary-of-terms/
+9. https://vk.com/@smirnovschool-kak-freimy-raskadrovka-delaut-vash-komiks-dinamichnee
+10. Using files from web applications- https://developer.mozilla.org/en-US/docs/Web/API/File_API/Using_files_from_web_applications
+11. about blob - https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/blob
+12. pixi.js container - https://pixijs.com/8.x/guides/components/scene-objects/container
 todo - investigate <canvas>
