@@ -29,6 +29,15 @@ export default function App() {
     setCanvasImages(prev => [...prev, newCanvasImage])
   }
 
+  const handleImageMoved = (movedImage: CanvasImage) => {
+    // Update the parent state with the new position
+    setCanvasImages(prev =>
+      prev.map(img =>
+        img.id === movedImage.id ? movedImage : img
+      )
+    )
+  }
+
   return (
     <div className="editor">
       <Toolbar
@@ -37,8 +46,10 @@ export default function App() {
         onSelect={addImageToCanvas}
       />
 
-      <Canvas images={canvasImages} />
+      <Canvas 
+        images={canvasImages} 
+        onImageMoved={handleImageMoved}
+      />
     </div>
   )
 }
-

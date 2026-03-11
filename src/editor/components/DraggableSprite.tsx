@@ -1,51 +1,57 @@
-import { useState } from "react"
-import { Texture } from "pixi.js"
+import { Sprite, FederatedPointerEvent } from "pixi.js"
+import { extend, useExtend } from "@pixi/react"
+import { useCallback, useRef } from "react"
+import { getTexture } from "./textureCache"
+import type { CanvasImage } from "../../types/CanvasImage"
 
-type Props = {
-  texture: Texture
-  x: number
-  y: number
+extend({
+  Sprite,
+})
+
+type DraggableSpriteProps = {
+  image: CanvasImage
+  isDragging: boolean
+  onDragStart: (id: string, event: FederatedPointerEvent) => void
+  onDragMove: (id: string, event: FederatedPointerEvent) => void
+  onDragEnd: (id: string, event: FederatedPointerEvent) => void
 }
 
-export default function DraggableSprite({ texture, x, y }: Props) {
-  const [dragging, setDragging] = useState(false)
-  const [position, setPosition] = useState({ x, y })
-  const [offset, setOffset] = useState({ x: 0, y: 0 })
+export function DraggableSprite({ 
+  image, 
+  isDragging, 
+  onDragStart, 
+  onDragMove, 
+  onDragEnd 
+}: DraggableSpriteProps) {
+  
+  const handleDragStart = useCallback((event: FederatedPointerEvent) => {
+    event.stopPropagation()
+    onDragStart(image.id, event)
+  }, [image.id, onDragStart])
 
-  const onPointerDown = (e: any) => {
-    const pos = e.data.getLocalPosition(e.currentTarget)
+  const handleDragMove = useCallback((event: FederatedPointerEvent) => {
+    event.stopPropagation()
+    onDragMove(image.id, event)
+  }, [image.id, onDragMove])
 
-    setOffset({
-      x: pos.x,
-      y: pos.y,
-    })
-
-    setDragging(true)
-  }
-
-  const onPointerUp = () => {
-    setDragging(false)
-  }
-
-const onPointerMove = (e: any) => {
-  if (!dragging) return
-
-  const pos = e.data.getLocalPosition(e.currentTarget.parent)
-
-  e.currentTarget.x = pos.x - offset.x
-  e.currentTarget.y = pos.y - offset.y
-}
+  const handleDragEnd = useCallback((event: FederatedPointerEvent) => {
+    event.stopPropagation()
+    onDragEnd(image.id, event)
+  }, [image.id, onDragEnd])
 
   return (
     <pixiSprite
-      texture={texture}
-      x={position.x}
-      y={position.y}
+      texture={getTexture(image.texture)}
+      x={image.x}
+      y={image.y}
       eventMode="static"
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      onPointerUpOutside={onPointerUp}
-      onPointerMove={onPointerMove}
+      cursor="move"
+      alpha={isDragging ? 0.7 : 1}
+      anchor={0.5}
+      onPointerDown={handleDragStart}
+      onGlobalPointerMove={handleDragMove}
+      onPointerUp={handleDragEnd}
+      onPointerUpOutside={handleDragEnd}
     />
   )
 }
