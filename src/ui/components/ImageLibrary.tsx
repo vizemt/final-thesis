@@ -21,20 +21,3 @@ export const ImageLibrary: React.FC<Props> = ({ images, onSelect }) => {
   );
 };
 
-/*import { useState } from "react";
-import { ImageUploader } from "./components/ImageUploader";
-import type { LibraryImage } from "../types/LibraryImage";
-
-const handleUpload = (files: File[]) => {
-  const newImages = files.map(file => ({
-    id: crypto.randomUUID(),
-    file,
-    preview: URL.createObjectURL(file)
-  }));
-
-  setImages(prev => [...prev, ...newImages]);
-};
-
-const [images, setImages] = useState<LibraryImage[]>([]);
-
-*/

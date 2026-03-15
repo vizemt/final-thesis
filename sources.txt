@@ -11,4 +11,4 @@ https://www.howtolovecomics.com/comic-book-glossary-of-terms/
 10. Using files from web applications- https://developer.mozilla.org/en-US/docs/Web/API/File_API/Using_files_from_web_applications
 11. about blob - https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/blob
 12. pixi.js container - https://pixijs.com/8.x/guides/components/scene-objects/container
-todo - investigate <canvas>
+13. How to render a list in React - https://coreui.io/answers/how-to-render-a-list-in-react/

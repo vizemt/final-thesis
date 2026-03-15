@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { FederatedPointerEvent, Container } from "pixi.js"
-import type { CanvasImage } from "../types/CanvasImage"
+import type { CanvasImage } from "../../types/CanvasImage"
 
 type DragOffset = {
   x: number
@@ -15,7 +15,7 @@ export function useDraggableSprites(initialImages: CanvasImage[]) {
 
   // Update images when props change
   useEffect(() => {
-    console.log('useDraggableSprites received new images:', initialImages.length) // Add this
+    console.log('useDraggableSprites received new images:', initialImages.length)
     setImages(initialImages)
   }, [initialImages])
 
