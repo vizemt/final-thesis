@@ -1,26 +1,20 @@
-import { Application, extend, useApplication } from "@pixi/react" // Keep useApplication
-import { Container, RenderLayer } from "pixi.js"
-import { useEffect, useRef } from "react"
+// components/canvas/Canvas.tsx
+import { Application, extend, useApplication } from "@pixi/react"
+import * as PIXI from 'pixi.js'
+import { useEffect } from "react"
 import { Scene } from "./Scene"
 import { useDraggableSprites } from "../../hooks/useDraggableSprites"
 import { useSelection } from "../../hooks/useSelection"
 import { useTransform } from "../../hooks/useTransform"
-import type { CanvasImage } from "../../types/CanvasImage"
 import { useLayers } from "../../hooks/useLayers"
 import { LayerPanel } from "../../ui/LayerPanel"
+import type { CanvasImage } from "../../types/CanvasImage"
 
 extend({
-  Container,
-  RenderLayer,
+  Container: PIXI.Container,
 })
 
-type CanvasProps = {
-  images: CanvasImage[]
-  onImageMoved?: (image: CanvasImage) => void
-  onImageTransformed?: (image: CanvasImage) => void
-}
-
-// Component that handles global events using useApplication()
+// Component that handles global events
 function GlobalEventLayer({ 
   activeTransform,
   updateTransform,
@@ -30,7 +24,7 @@ function GlobalEventLayer({
   updateTransform: (event: any) => void
   endTransform: () => void
 }) {
-  const { app } = useApplication() // Destructure app from the returned object
+  const { app } = useApplication()
   
   useEffect(() => {
     if (!app) return
@@ -64,33 +58,30 @@ function GlobalEventLayer({
   return null
 }
 
+type CanvasProps = {
+  images: CanvasImage[]
+  onImageMoved?: (image: CanvasImage) => void
+  onImageTransformed?: (image: CanvasImage) => void
+}
+
 export default function Canvas({ images, onImageMoved, onImageTransformed }: CanvasProps) {
+  console.log('Canvas received images:', images)
+
   const {
     images: localImages,
-    draggingId,
     containerRef,
-    updateImagePosition,
     updateImageTransform
   } = useDraggableSprites(images)
 
   const {
     layers,
     activeLayerId,
-    imagesByLayer,
     addLayer,
     removeLayer,
     updateLayer,
     moveLayer,
-    assignToLayer,
     setActiveLayerId
   } = useLayers(images)
-
-  const layerContainersRef = useRef<Map<string, Container>>(new Map())
-
-  // Create Pixi layers when layers change
-  useEffect(() => {
-    // This will be implemented when we set up the Pixi layer system
-  }, [layers])
 
   const {
     selectedId,
@@ -100,15 +91,15 @@ export default function Canvas({ images, onImageMoved, onImageTransformed }: Can
   } = useSelection()
 
   const handleTransform = (id: string, updates: Partial<CanvasImage>) => {
-    console.log('handleTransform called with:', id, updates) // Add this
+    console.log('handleTransform called:', id, updates)
     
-    // Use the new updateImageTransform function
     updateImageTransform(id, updates)
     
     if (onImageTransformed) {
       const updatedImage = localImages.find(img => img.id === id)
       if (updatedImage) {
-        onImageTransformed({ ...updatedImage, ...updates })
+        const transformedImage = { ...updatedImage, ...updates }
+        onImageTransformed(transformedImage)
       }
     }
   }
@@ -121,25 +112,19 @@ export default function Canvas({ images, onImageMoved, onImageTransformed }: Can
   } = useTransform(localImages, handleTransform)
 
   const handleDragStart = (id: string, event: any) => {
-    if (event.shiftKey) {
-      select(id, true)
-    } else if (!isSelected(id)) {
-      select(id, false)
-    }
+    console.log('Drag start:', id)
     startTransform(id, 'move', event)
   }
 
-  const handleTransformStart = (id: string, type: 'resize' | 'rotate', handle: any, event: any) => {
-    if (!isSelected(id)) {
-      select(id, false)
-    }
+  const handleTransformStart = (id: string, type: 'resize' | 'rotate', handle: string, event: any) => {
+    console.log('Transform start:', { id, type, handle })
     startTransform(id, type, event, handle)
   }
 
   return (
     <div className="canvas-container">
       <Application 
-        width={1700} 
+        width={1600} 
         height={900} 
         background={0x999999}
         sharedTicker={true}
@@ -151,7 +136,6 @@ export default function Canvas({ images, onImageMoved, onImageTransformed }: Can
         />
         <Scene
           images={localImages}
-          draggingId={draggingId}
           selectedId={selectedId}
           multiSelectedIds={multiSelectedIds}
           containerRef={containerRef}

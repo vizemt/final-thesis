@@ -1,25 +1,15 @@
-export interface Transform {
-  x: number
-  y: number
-  width: number
-  height: number
-  rotation: number
-  scaleX: number
-  scaleY: number
+import type { Transformer } from '@pixi-essentials/transformer';
+
+export interface TransformHandle {
+  // Keep this for compatibility, but we'll use transformer directly
 }
 
-export interface Bounds {
-  minX: number
-  minY: number
-  maxX: number
-  maxY: number
-  width: number
-  height: number
-  centerX: number
-  centerY: number
+export interface TransformState {
+  id: string
+  transformer?: Transformer
 }
 
-export type TransformHandle = 
+export type TransformHandleType = 
   | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
   | 'top' | 'right' | 'bottom' | 'left'
   | 'rotate'

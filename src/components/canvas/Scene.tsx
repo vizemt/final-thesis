@@ -1,35 +1,34 @@
-import { Container } from "pixi.js"
+import * as PIXI from 'pixi.js'
 import { extend } from "@pixi/react"
 import { SelectedSprite } from "./SelectedSprite"
 import type { CanvasImage } from "../../types/CanvasImage"
 
 extend({
-  Container,
+  Container: PIXI.Container,
 })
 
 type SceneProps = {
   images: CanvasImage[]
-  draggingId: string | null
+  containerRef: React.RefObject<PIXI.Container>
   selectedId: string | null
   multiSelectedIds: Set<string>
-  containerRef: React.RefObject<Container>
   onDragStart: (id: string, event: any) => void
-  onTransformStart: (id: string, type: 'resize' | 'rotate', handle: any, event: any) => void
+  onTransformStart: (id: string, type: 'resize' | 'rotate', handle: string, event: any) => void
   onSelect: (id: string, multi: boolean) => void
 }
 
 export function Scene({ 
   images, 
-  draggingId,
+  containerRef, 
   selectedId,
   multiSelectedIds,
-  containerRef, 
-  onDragStart, 
+  onDragStart,
   onTransformStart,
   onSelect
 }: SceneProps) {
   const handleBackgroundClick = (event: any) => {
-    // Deselect when clicking on empty background
+    console.log('Background click')
+    // Only deselect if clicking directly on the background container
     if (event.target === event.currentTarget) {
       onSelect('', false)
     }
@@ -39,6 +38,7 @@ export function Scene({
     <pixiContainer 
       ref={containerRef}
       eventMode="static"
+      interactive={true}
       onPointerDown={handleBackgroundClick}
     >
       {images.map(img => (
@@ -47,9 +47,8 @@ export function Scene({
           image={img}
           isSelected={selectedId === img.id || multiSelectedIds.has(img.id)}
           onDragStart={onDragStart}
-          onTransformStart={(type, handle, event) => 
-            onTransformStart(img.id, type, handle, event)
-          }
+          onTransformStart={onTransformStart}
+          onSelect={onSelect}
         />
       ))}
     </pixiContainer>

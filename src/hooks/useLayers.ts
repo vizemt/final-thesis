@@ -81,7 +81,7 @@ export function useLayers(initialImages: CanvasImage[]) {
   }, [])
 
   const assignToLayer = useCallback((imageId: string, layerId: string) => {
-    // This will be called from your canvas component
+    // This will be called from canvas component
     // The actual image update will be handled by the parent
     return { imageId, layerId }
   }, [])
