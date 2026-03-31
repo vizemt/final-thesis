@@ -1,3 +1,5 @@
+import type { Layer } from "./Layer"
+
 export interface CanvasImage {
   id: string
   texture: string
@@ -12,5 +14,5 @@ export interface CanvasImage {
   }
   originalWidth?: number  // Store original dimensions
   originalHeight?: number
-  layerId?: string
+  layer: Layer
 }

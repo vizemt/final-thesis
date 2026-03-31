@@ -14,5 +14,5 @@ export interface Layer {
 export interface LayerGroup {
   id: string
   name: string
-  layers: string[] // layer IDs
+  layers: string[]
 }

@@ -1,8 +1,12 @@
+/* Works as controller bridge between ui and canvas and inits PIXI Application (root container) */
 import { useEffect, useState } from "react"
-import Canvas from "./components/canvas/Canvas"
+import Workspace from "./components/Workspace"
 import LibraryPanel from "./ui/LibraryPanel"
 import type { LibraryImage } from "./types/LibraryImage"
 import type { CanvasImage } from "./types/CanvasImage"
+import { LayerPanel } from "./ui/LayerPanel"
+import { useLayers } from "./hooks/useLayers"
+import { getNextZIndex } from "./utils/newId"
 
 export default function App() {
   const [libraryImages, setLibraryImages] = useState<LibraryImage[]>([])
@@ -41,19 +45,28 @@ export default function App() {
       originalWidth: dimensions.width,
       originalHeight: dimensions.height,
       scale: { x: 1, y: 1 },
-      rotation: 0
+      rotation: 0,
+      layer: {
+        id: crypto.randomUUID(),
+        name: 'Layer',
+        visible: true,
+        opacity: 0,
+        zIndex: getNextZIndex()
+      }
     }
 
     setCanvasImages(prev => [...prev, newCanvasImage])
   }
 
-  const handleImageMoved = (movedImage: CanvasImage) => {
-    setCanvasImages(prev =>
-      prev.map(img =>
-        img.id === movedImage.id ? movedImage : img
-      )
-    )
-  }
+  const {
+    layers,
+    activeLayerId,
+    addLayer,
+    removeLayer,
+    updateLayer,
+    moveLayer,
+    setActiveLayerId
+  } = useLayers(canvasImages)
 
   return (
     <div className="editor">
@@ -62,11 +75,19 @@ export default function App() {
         onUpload={handleUpload}
         onSelect={addImageToCanvas}
       />
-
-      <Canvas 
-        images={canvasImages} 
-        onImageMoved={handleImageMoved}
-        onImageTransformed={handleImageMoved}
+      <LayerPanel
+        layers={layers}
+        activeLayerId={activeLayerId}
+        onSelectLayer={setActiveLayerId}
+        onToggleVisibility={(id) => updateLayer(id, { visible: !layers.find(l => l.id === id)?.visible })}
+        onToggleLock={(id) => updateLayer(id, { locked: !layers.find(l => l.id === id)?.locked })}
+        onRemoveLayer={removeLayer}
+        onMoveLayer={moveLayer}
+        onOpacityChange={(id, opacity) => updateLayer(id, { opacity })}
+        onAddLayer={() => addLayer(`Layer ${layers.length + 1}`)}
+      />
+      <Workspace 
+        images={canvasImages}
       />
     </div>
   )

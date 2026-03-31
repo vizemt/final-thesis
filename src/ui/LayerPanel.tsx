@@ -29,7 +29,6 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
     <div className="layer-panel">
       <div className="layer-panel-header">
         <h3>Layers</h3>
-        <button onClick={onAddLayer}>+ Add Layer</button>
       </div>
       
       <div className="layer-list">

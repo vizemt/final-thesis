@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js'
 import { extend } from "@pixi/react"
-import { SelectedSprite } from "./SelectedSprite"
-import type { CanvasImage } from "../../types/CanvasImage"
+import type { CanvasImage } from "../types/CanvasImage"
+import { ImageSprite } from './ImageSprite'
 
 extend({
   Container: PIXI.Container,
@@ -12,8 +12,6 @@ type SceneProps = {
   containerRef: React.RefObject<PIXI.Container>
   selectedId: string | null
   multiSelectedIds: Set<string>
-  onDragStart: (id: string, event: any) => void
-  onTransformStart: (id: string, type: 'resize' | 'rotate', handle: string, event: any) => void
   onSelect: (id: string, multi: boolean) => void
 }
 
@@ -22,32 +20,22 @@ export function Scene({
   containerRef, 
   selectedId,
   multiSelectedIds,
-  onDragStart,
-  onTransformStart,
   onSelect
 }: SceneProps) {
-  const handleBackgroundClick = (event: any) => {
-    console.log('Background click')
-    // Only deselect if clicking directly on the background container
-    if (event.target === event.currentTarget) {
-      onSelect('', false)
-    }
-  }
+
 
   return (
     <pixiContainer 
       ref={containerRef}
       eventMode="static"
       interactive={true}
-      onPointerDown={handleBackgroundClick}
     >
       {images.map(img => (
-        <SelectedSprite
+        <ImageSprite
           key={img.id}
+          zIndex={img.layer.zIndex}
           image={img}
           isSelected={selectedId === img.id || multiSelectedIds.has(img.id)}
-          onDragStart={onDragStart}
-          onTransformStart={onTransformStart}
           onSelect={onSelect}
         />
       ))}

@@ -6,8 +6,7 @@ export function useLayers(initialImages: CanvasImage[]) {
   const [layers, setLayers] = useState<Layer[]>([
     { id: 'default', name: 'Background', visible: true, opacity: 1, zIndex: 0 },
     { id: 'layer1', name: 'Layer 1', visible: true, opacity: 1, zIndex: 1 },
-    { id: 'layer2', name: 'Layer 2', visible: true, opacity: 1, zIndex: 2 },
-    { id: 'ui', name: 'UI Overlay', visible: true, opacity: 1, zIndex: 100 }
+
   ])
   
   const [activeLayerId, setActiveLayerId] = useState<string>('layer1')
@@ -22,10 +21,10 @@ export function useLayers(initialImages: CanvasImage[]) {
     
     // Add images to their respective layers
     initialImages.forEach(img => {
-      const layerId = img.layerId || 'default'
-      const layerImages = map.get(layerId) || []
+      const layer = img.layer
+      const layerImages = map.get(layer.id) || []
       layerImages.push(img)
-      map.set(layerId, layerImages)
+      map.set(layer.id, layerImages)
     })
     
     return map
