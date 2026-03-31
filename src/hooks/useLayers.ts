@@ -1,15 +1,14 @@
 import { useState, useCallback, useEffect } from 'react'
 import type { Layer, LayerGroup } from '../types/Layer'
 import type { CanvasImage } from '../types/CanvasImage'
+import { getNextZIndex } from '../utils/newId'
 
 export function useLayers(initialImages: CanvasImage[]) {
   const [layers, setLayers] = useState<Layer[]>([
-    { id: 'default', name: 'Background', visible: true, opacity: 1, zIndex: 0 },
-    { id: 'layer1', name: 'Layer 1', visible: true, opacity: 1, zIndex: 1 },
-
+    { id: 'default', name: 'Background', visible: true, opacity: 1, zIndex: 0 }
   ])
   
-  const [activeLayerId, setActiveLayerId] = useState<string>('layer1')
+  const [activeLayerId, setActiveLayerId] = useState<string>('default')
   const [layerGroups, setLayerGroups] = useState<LayerGroup[]>([])
 
   // Organize images by layer
@@ -19,7 +18,7 @@ export function useLayers(initialImages: CanvasImage[]) {
     // Initialize empty arrays for all layers
     layers.forEach(layer => map.set(layer.id, []))
     
-    // Add images to their respective layers
+    // Add images to their layers
     initialImages.forEach(img => {
       const layer = img.layer
       const layerImages = map.get(layer.id) || []
@@ -30,13 +29,14 @@ export function useLayers(initialImages: CanvasImage[]) {
     return map
   }, [layers, initialImages])
 
-  const addLayer = useCallback((name: string, options?: Partial<Layer>) => {
+  const addLayer = useCallback((options?: Partial<Layer>) => {
+    const newLayerIndex = getNextZIndex()
     const newLayer: Layer = {
-      id: `layer-${Date.now()}`,
-      name,
+      id: crypto.randomUUID(),
+      name: 'Layer ' + newLayerIndex,
       visible: true,
       opacity: 1,
-      zIndex: layers.length,
+      zIndex: newLayerIndex,
       ...options
     }
     setLayers(prev => [...prev, newLayer])
@@ -57,25 +57,48 @@ export function useLayers(initialImages: CanvasImage[]) {
   }, [])
 
   const moveLayer = useCallback((layerId: string, direction: 'up' | 'down') => {
+    if (layerId === 'default') return // Can't move default layer
+
     setLayers(prev => {
-      const index = prev.findIndex(l => l.id === layerId)
-      if (index === -1) return prev
+      // Sort layers by zIndex for proper ordering
+      const sortedLayers = [...prev].sort((a, b) => a.zIndex - b.zIndex)
+      const currentIndex = sortedLayers.findIndex(l => l.id === layerId)
       
-      const newIndex = direction === 'up' 
-        ? Math.min(index + 1, prev.length - 1)
-        : Math.max(index - 1, 0)
-      
-      if (newIndex === index) return prev
-      
-      const newLayers = [...prev]
-      const [movedLayer] = newLayers.splice(index, 1)
-      newLayers.splice(newIndex, 0, movedLayer)
-      
-      // Update zIndex based on new order
-      return newLayers.map((layer, idx) => ({
-        ...layer,
-        zIndex: idx
-      }))
+      if (currentIndex === -1) return prev
+
+      let targetIndex: number
+      if (direction === 'up') {
+        // Move up means higher zIndex (towards end of array)
+        targetIndex = currentIndex + 1
+        // Can't move up if already at the top
+        if (targetIndex >= sortedLayers.length) return prev
+      } else {
+        // Move down means lower zIndex (towards start of array)
+        targetIndex = currentIndex - 1
+        // Can't move down if already at the bottom (index 0 is default layer)
+        if (targetIndex < 1) return prev // Index 0 is always default layer
+      }
+
+      // Get the layers to swap
+      const currentLayer = sortedLayers[currentIndex]
+      const targetLayer = sortedLayers[targetIndex]
+
+      // Swap zIndex values
+      const currentZIndex = currentLayer.zIndex
+      const targetZIndex = targetLayer.zIndex
+
+      // Create new layers array with swapped zIndices
+      const updatedLayers = prev.map(layer => {
+        if (layer.id === currentLayer.id) {
+          return { ...layer, zIndex: targetZIndex }
+        }
+        if (layer.id === targetLayer.id) {
+          return { ...layer, zIndex: currentZIndex }
+        }
+        return layer
+      })
+
+      return updatedLayers
     })
   }, [])
 
@@ -84,6 +107,11 @@ export function useLayers(initialImages: CanvasImage[]) {
     // The actual image update will be handled by the parent
     return { imageId, layerId }
   }, [])
+
+    // Helper to get layers sorted by zIndex (ascending)
+  const getSortedLayers = useCallback(() => {
+    return [...layers].sort((a, b) => a.zIndex - b.zIndex)
+  }, [layers])
 
   return {
     layers,

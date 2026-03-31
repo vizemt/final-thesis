@@ -6,14 +6,13 @@ type State = {
 };
 
 const useZIndexStore = create<State>((set) => ({
-  count: 0,
+  count: 1,
   increment: () => set((state) => ({ count: state.count + 1 })),
 }));
 
-
 export function getNextZIndex(): number {
-    const { count, increment } = useZIndexStore.getState();
-
-    increment();
-    return count;
+  const state = useZIndexStore.getState();
+  const oldIndex = state.count;
+  state.increment();
+  return oldIndex;
 }

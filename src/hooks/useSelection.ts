@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react'
-import type { CanvasImage } from '../types/CanvasImage'
 
 export function useSelection() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -16,9 +15,9 @@ export function useSelection() {
         } else {
           newSet.add(id)
         }
+        setSelectedId(null);
         return newSet
       })
-      setSelectedId(null)
     } else {
       setSelectedId(id)
       setMultiSelectedIds(new Set())

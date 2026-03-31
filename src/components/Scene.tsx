@@ -13,6 +13,7 @@ type SceneProps = {
   selectedId: string | null
   multiSelectedIds: Set<string>
   onSelect: (id: string, multi: boolean) => void
+  onImageDelete: (id: string) => void
 }
 
 export function Scene({ 
@@ -20,9 +21,12 @@ export function Scene({
   containerRef, 
   selectedId,
   multiSelectedIds,
-  onSelect
+  onSelect,
+  onImageDelete
 }: SceneProps) {
 
+  // Sort images by zIndex for proper rendering order
+  const sortedImages = [...images].sort((a, b) => (a.layer?.zIndex || 0) - (b.layer?.zIndex || 0))
 
   return (
     <pixiContainer 
@@ -30,13 +34,14 @@ export function Scene({
       eventMode="static"
       interactive={true}
     >
-      {images.map(img => (
+      {sortedImages.map(img => (
         <ImageSprite
           key={img.id}
           zIndex={img.layer.zIndex}
           image={img}
           isSelected={selectedId === img.id || multiSelectedIds.has(img.id)}
           onSelect={onSelect}
+          onDelete={onImageDelete}
         />
       ))}
     </pixiContainer>

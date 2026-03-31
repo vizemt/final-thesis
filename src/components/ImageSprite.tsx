@@ -16,6 +16,7 @@ interface ImageSpriteProps {
     isSelected: boolean,
     zIndex: number,
     onSelect: (id: string, multi: boolean) => void
+    onDelete: (id: string) => void
 }
 
 export function ImageSprite(props: ImageSpriteProps) {
@@ -26,7 +27,21 @@ export function ImageSprite(props: ImageSpriteProps) {
     const [isHeld, setIsHeld] = useState(false);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-    const handleMouseDown = (e) => {
+    // handle keyboard events
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.key === 'Delete') && props.isSelected) {
+                props.onDelete(props.image.id);
+            }
+        };
+        
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [props.isSelected, props.image.id, props.onDelete]);
+
+    const handleMouseDown = (e: any) => {
+        console.log(`z: ${props.image.layer?.zIndex}`);
+        
         if (props.isSelected) {
             setOffset({
                 x: e.currentTarget.parent.x - e.globalX,
@@ -36,7 +51,7 @@ export function ImageSprite(props: ImageSpriteProps) {
         }
     }
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: any) => {
         if (isHeld && containerRef.current) {
             containerRef.current.x = e.globalX + offset.x;
             containerRef.current.y = e.globalY + offset.y;
@@ -61,7 +76,7 @@ export function ImageSprite(props: ImageSpriteProps) {
                 onClick={() => props.onSelect(props.image.id, false)}
             />
 
-            {props.isSelected && spriteRef.current && ( // TODO multi-selection... maybe
+            {props.isSelected && spriteRef.current && (
                 <TransformHandles
                     id={props.image.id}
                     x={0}

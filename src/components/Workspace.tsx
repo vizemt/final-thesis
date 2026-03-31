@@ -1,9 +1,7 @@
-/* Canvas component inits PIXI Application (root container) */
-import { Application, extend, useApplication } from "@pixi/react"
+import { Application, extend } from "@pixi/react"
 import * as PIXI from 'pixi.js'
-import { useEffect, useRef } from "react"
+import { useRef } from "react"
 import { Scene } from "./Scene"
-import { useSelection } from "../hooks/useSelection"
 import type { CanvasImage } from "../types/CanvasImage"
 
 extend({
@@ -12,22 +10,24 @@ extend({
 
 type WorkspaceProps = {
   images: CanvasImage[]
+  selectedId: string | null
+  multiSelectedIds: Set<string>
+  onSelect: (id: string, multi: boolean) => void
+  onImageDelete: (id: string) => void
 }
 
-export default function Workspace({ images }: WorkspaceProps) {
-  //console.log('Canvas received images:', images) TODO this line is called twice - maybe fix is needed
+export default function Workspace({ 
+  images, 
+  selectedId, 
+  multiSelectedIds, 
+  onSelect,
+  onImageDelete 
+}: WorkspaceProps) {
   const containerRef = useRef<PIXI.Container>(null)
-
-  const {
-    selectedId,
-    multiSelectedIds,
-    select,
-    isSelected
-  } = useSelection()
 
   return (
     <div className="canvas-container">
-      <Application // Background
+      <Application
         width={1600} 
         height={1200} 
         background={0x676767}
@@ -38,7 +38,8 @@ export default function Workspace({ images }: WorkspaceProps) {
           selectedId={selectedId}
           multiSelectedIds={multiSelectedIds}
           containerRef={containerRef}
-          onSelect={select}
+          onSelect={onSelect}
+          onImageDelete={onImageDelete}
         />
       </Application>
     </div>
