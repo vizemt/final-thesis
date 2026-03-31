@@ -39,16 +39,29 @@ export function ImageSprite(props: ImageSpriteProps) {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [props.isSelected, props.image.id, props.onDelete]);
 
-    const handleMouseDown = (e: any) => {
-        console.log(`z: ${props.image.layer?.zIndex}`);
+    // Global mouse up handler to release drag anywhere
+    useEffect(() => {
+        const handleGlobalMouseUp = () => {
+            if (isHeld) {
+                setIsHeld(false);
+            }
+        };
         
-        if (props.isSelected) {
-            setOffset({
-                x: e.currentTarget.parent.x - e.globalX,
-                y: e.currentTarget.parent.y - e.globalY,
-            });
-            setIsHeld(true);
+        window.addEventListener('mouseup', handleGlobalMouseUp);
+        return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+    }, [isHeld]);
+
+    const handleMouseDown = (e: any) => {
+        //console.log(`z: ${props.image.layer?.zIndex}`);
+        if (!props.isSelected) {
+            props.onSelect(props.image.id, false)
         }
+        setOffset({
+            x: e.currentTarget.parent.x - e.globalX,
+            y: e.currentTarget.parent.y - e.globalY,
+        });
+        setIsHeld(true);
+        
     }
 
     const handleMouseMove = (e: any) => {

@@ -108,7 +108,7 @@ export function useLayers(initialImages: CanvasImage[]) {
     return { imageId, layerId }
   }, [])
 
-    // Helper to get layers sorted by zIndex (ascending)
+  // Helper to get layers sorted by zIndex (ascending)
   const getSortedLayers = useCallback(() => {
     return [...layers].sort((a, b) => a.zIndex - b.zIndex)
   }, [layers])

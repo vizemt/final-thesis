@@ -35,7 +35,7 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
             // TODO implement masks
           }}
         >
-          button here
+          button here lol
         </button>
       </div>
       

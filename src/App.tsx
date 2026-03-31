@@ -189,9 +189,9 @@ const cleanupEmptyLayers = useCallback(() => {
 }, [canvasImages, layers, removeLayer, activeLayerId, setActiveLayerId])
 
   // Run cleanup whenever images change
-  // useEffect(() => {
-  //   cleanupEmptyLayers()
-  // }, [cleanupEmptyLayers])
+  useEffect(() => {
+    cleanupEmptyLayers()
+  }, [cleanupEmptyLayers])
 
   return (
     <div className="editor">
