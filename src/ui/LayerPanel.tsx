@@ -31,13 +31,11 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
       <div className="layer-panel-header">
         <h3>Layers</h3>
         <button 
-          className="add-layer-btn"
           onClick={() => {
-            // This should call a function passed from parent to add a new layer
-            // You'll need to add this prop to LayerPanel
+            // TODO implement masks
           }}
         >
-          + Add Layer
+          button here
         </button>
       </div>
       
@@ -76,7 +74,6 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
                 </button>
                 
                 <span className="layer-name">{layer.name}</span>
-                <span className="layer-zindex">z: {layer.zIndex}</span>
               </div>
               
               <div className="layer-actions">

@@ -97,7 +97,7 @@ export default function App() {
     setCanvasImages(prev => [...prev, newCanvasImage])
   }
 
-    // Update image zIndex when layer zIndex changes
+  // Update image zIndex when layer zIndex changes
   const updateImagesLayerZIndex = useCallback((layerId: string, newZIndex: number) => {
     setCanvasImages(prev => 
       prev.map(img => 
@@ -142,7 +142,6 @@ export default function App() {
       updateImagesLayerZIndex(layerId, movedLayer.zIndex)
       
       // Find which layer was swapped with
-      const oldLayer = oldLayers.find(l => l.id === layerId)
       const swappedLayer = layers.find(l => 
         l.id !== layerId && 
         oldLayers.find(old => old.id === l.id)?.zIndex !== l.zIndex
@@ -167,37 +166,32 @@ export default function App() {
     }
   }
 
-  const cleanupEmptyLayers = useCallback(() => {
-    // Count images per layer
-    const imageCountByLayer = new Map<string, number>()
-    canvasImages.forEach(img => {
-      const layerId = img.layer?.id
-      if (layerId) {
-        imageCountByLayer.set(layerId, (imageCountByLayer.get(layerId) || 0) + 1)
-      }
-    })
+const cleanupEmptyLayers = useCallback(() => {
+  // Get all layer IDs that currently have an image
+  const usedLayerIds = new Set(
+    canvasImages
+      .map(img => img.layer?.id)
+      .filter(Boolean) as string[]
+  )
 
-    // Find layers with no images (excluding default layer)
-    const emptyLayers = layers.filter(layer => 
-      layer.id !== 'default' && 
-      !imageCountByLayer.has(layer.id)
-    )
+  // Find empty layers (excluding default)
+  const emptyLayers = layers.filter(
+    layer => layer.id !== 'default' && !usedLayerIds.has(layer.id)
+  )
 
-    // Remove empty layers
-    emptyLayers.forEach(layer => {
-      removeLayer(layer.id)
-    })
+  // Remove empty layers
+  emptyLayers.forEach(layer => removeLayer(layer.id))
 
-    // If active layer was removed, switch to default layer
-    if (emptyLayers.some(layer => layer.id === activeLayerId)) {
-      setActiveLayerId('default')
-    }
-  }, [canvasImages, layers, removeLayer, activeLayerId, setActiveLayerId])
+  // Reset active layer if it was removed
+  if (emptyLayers.some(layer => layer.id === activeLayerId)) {
+    setActiveLayerId('default')
+  }
+}, [canvasImages, layers, removeLayer, activeLayerId, setActiveLayerId])
 
-   // Run cleanup whenever images change
-  useEffect(() => {
-    cleanupEmptyLayers()
-  }, [cleanupEmptyLayers])
+  // Run cleanup whenever images change
+  // useEffect(() => {
+  //   cleanupEmptyLayers()
+  // }, [cleanupEmptyLayers])
 
   return (
     <div className="editor">

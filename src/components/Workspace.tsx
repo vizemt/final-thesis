@@ -32,6 +32,7 @@ export default function Workspace({
         height={1200} 
         background={0x676767}
         sharedTicker={true}
+        
       >
         <Scene
           images={images}

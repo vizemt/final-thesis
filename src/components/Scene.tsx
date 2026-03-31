@@ -25,16 +25,13 @@ export function Scene({
   onImageDelete
 }: SceneProps) {
 
-  // Sort images by zIndex for proper rendering order
-  const sortedImages = [...images].sort((a, b) => (a.layer?.zIndex || 0) - (b.layer?.zIndex || 0))
-
   return (
     <pixiContainer 
       ref={containerRef}
       eventMode="static"
       interactive={true}
     >
-      {sortedImages.map(img => (
+      {images.map(img => (
         <ImageSprite
           key={img.id}
           zIndex={img.layer.zIndex}
