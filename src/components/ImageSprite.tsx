@@ -61,7 +61,6 @@ export function ImageSprite(props: ImageSpriteProps) {
             y: e.currentTarget.parent.y - e.globalY,
         });
         setIsHeld(true);
-        
     }
 
     const handleMouseMove = (e: any) => {

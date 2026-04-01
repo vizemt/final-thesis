@@ -1,0 +1,1 @@
+export type ToolbarItem = 'layers' | 'library' | 'pages'

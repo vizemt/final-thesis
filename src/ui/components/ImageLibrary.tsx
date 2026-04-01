@@ -7,7 +7,7 @@ type Props = {
 
 export const ImageLibrary: React.FC<Props> = ({ images, onSelect }) => {
   return (
-    <div className="library">
+    <div className="library-items">
       {images?.map(img => (
         <div
           key={img.id}
@@ -20,4 +20,3 @@ export const ImageLibrary: React.FC<Props> = ({ images, onSelect }) => {
     </div>
   );
 };
-

@@ -89,7 +89,6 @@ export function TransformHandles({
     container.x = x;
     container.y = y;
     container.rotation = rotation;
-    container.zIndex = 9999;
 
     // Border
     const border = new PIXI.Graphics();
@@ -171,6 +170,7 @@ export function TransformHandles({
       onPointerUp={handlePointerUp}
       onPointerUpOutside={handlePointerUp}
       onGlobalMouseMove={handleGlobalMove}
+      zIndex={9999}
     />
   );
 }

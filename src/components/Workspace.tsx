@@ -28,8 +28,8 @@ export default function Workspace({
   return (
     <div className="canvas-container">
       <Application
-        width={1600} 
-        height={1200} 
+        width={1800} 
+        height={1300} 
         background={0x676767}
         sharedTicker={true}
         

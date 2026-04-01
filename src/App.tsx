@@ -7,8 +7,12 @@ import type { CanvasImage } from "./types/CanvasImage"
 import { LayerPanel } from "./ui/LayerPanel"
 import { useLayers } from "./hooks/useLayers"
 import { useSelection } from "./hooks/useSelection"
+import Toolbar from "./ui/Toolbar"
+import type { ToolbarItem } from "./types/ToolbarItem"
+import PagesPanel from "./ui/PagesPanel"
 
 export default function App() {
+  const [activePanel, setActivePanel] = useState<ToolbarItem>('library')
   const [libraryImages, setLibraryImages] = useState<LibraryImage[]>([])
   const [canvasImages, setCanvasImages] = useState<CanvasImage[]>([])
 
@@ -195,29 +199,43 @@ const cleanupEmptyLayers = useCallback(() => {
 
   return (
     <div className="editor">
-      <LibraryPanel
-        images={libraryImages}
-        onUpload={handleUpload}
-        onSelect={addImageToCanvas}
+      <Toolbar 
+        activePanel={activePanel} 
+        onPanelChange={setActivePanel} 
       />
-      <LayerPanel
-        layers={layers}
-        activeLayerId={activeLayerId}
-        onSelectLayer={handleSelectLayer}
-        onToggleVisibility={(id) => updateLayer(id, { visible: !layers.find(l => l.id === id)?.visible })}
-        onToggleLock={(id) => updateLayer(id, { locked: !layers.find(l => l.id === id)?.locked })}
-        onRemoveLayer={(id) => {
-          // clear images
-          setCanvasImages(prev => prev.filter(img => img.layer?.id !== id))
-          removeLayer(id)
-          // clear selection if the deleted layer was selected
-          if (activeLayerId === id) {
-            clearSelection()
-          }
-        }}
-        onMoveLayer={handleMoveLayer}
-        onOpacityChange={(id, opacity) => updateLayer(id, { opacity })}
-      />
+      {activePanel === 'layers' && (
+        <LayerPanel
+          layers={layers}
+          activeLayerId={activeLayerId}
+          onSelectLayer={handleSelectLayer}
+          onToggleVisibility={(id) => updateLayer(id, { visible: !layers.find(l => l.id === id)?.visible })}
+          onToggleLock={(id) => updateLayer(id, { locked: !layers.find(l => l.id === id)?.locked })}
+          onRemoveLayer={(id) => {
+            // clear images
+            setCanvasImages(prev => prev.filter(img => img.layer?.id !== id))
+            removeLayer(id)
+            // clear selection if the deleted layer was selected
+            if (activeLayerId === id) {
+              clearSelection()
+            }
+          }}
+          onMoveLayer={handleMoveLayer}
+          onOpacityChange={(id, opacity) => updateLayer(id, { opacity })}
+        />
+      )}
+
+      {activePanel === 'pages' && (
+        <PagesPanel />
+      )}
+      
+      {activePanel === 'library' && (
+        <LibraryPanel
+          images={libraryImages}
+          onUpload={handleUpload}
+          onSelect={addImageToCanvas}
+        />
+      )}
+
       <Workspace 
         images={canvasImages}
         selectedId={selectedId}
