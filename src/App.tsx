@@ -10,11 +10,13 @@ import { useSelection } from "./hooks/useSelection"
 import Toolbar from "./ui/Toolbar"
 import type { ToolbarItem } from "./types/ToolbarItem"
 import PagesPanel from "./ui/PagesPanel"
+import { usePages } from "./hooks/usePages"
 
 export default function App() {
   const [activePanel, setActivePanel] = useState<ToolbarItem>('library')
   const [libraryImages, setLibraryImages] = useState<LibraryImage[]>([])
   const [canvasImages, setCanvasImages] = useState<CanvasImage[]>([])
+  const pagesManager = usePages([], [])
 
   const handleUpload = (files: File[]) => {
     const newImages = files.map(file => ({
@@ -225,7 +227,7 @@ const cleanupEmptyLayers = useCallback(() => {
       )}
 
       {activePanel === 'pages' && (
-        <PagesPanel />
+        <PagesPanel pages={pagesManager} />
       )}
       
       {activePanel === 'library' && (

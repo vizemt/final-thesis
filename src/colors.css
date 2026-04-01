@@ -1,0 +1,79 @@
+:root {
+  /* Primary Colors */
+  --color-primary: #6681bb;
+  --color-primary-dark: #2f4f94;
+  --color-primary-light: rgb(168, 195, 228);
+  --color-primary-bg: #1e3a5f;
+  --color-primary-border: #5a9bd5;
+  --color-bg-white: #ffffff;
+  --color-bg-app: #f5f5f5;
+  --color-bg-hover: #f8f9fa;
+  --color-bg-active: #e3f2fd;
+  
+  /* Text Colors */
+  --color-text-primary: #212529;
+  --color-text-dark: #212529;
+  --color-text-light: #6c757d;
+  --color-text-inactive: #6c757d;
+  --color-text-white: #212529;
+  
+  /* Border Colors */
+  --color-border-light: #e9ecef;
+  --color-border-dark: #dee2e6;
+  --color-border-card: #e9ecef;
+  --color-border-hover: #ced4da;
+  --color-border-focus: #007bff;
+  
+  /* Interactive Colors */
+  --color-primary-bg: #e7f1ff;
+  --color-primary-border: #6681bbd3;
+  --color-interactive-hover: #f8f9fa;
+  --color-interactive-active: #007bff;
+  --color-interactive-link: #007bff;
+  --color-interactive-link-hover: #0056b3;
+  
+  /* Button Colors */
+  --color-btn-bg: rgb(168, 195, 228);
+  --color-btn-bg-hover: #6681bb;
+  
+  /* Danger Colors */
+  --color-danger: #dc3545;
+  --color-danger-bg: #fff5f5;
+  --color-danger-hover: #dc3545;
+  --color-danger-text: #ffffff;
+
+  
+  /* Layer */
+  --color-layer-active-border: #007bff;
+  --color-layer-opacity-bg: #dee2e6;
+  
+  /* Scrollbar */
+  --color-bg-scrollbar: #f1f1f1;
+  --color-bg-scrollbar-thumb: #c1c1c1;
+  --color-bg-scrollbar-thumb-hover: #a8a8a8;
+  
+  /* Shadows */
+  --color-shadow-sm: rgba(0, 0, 0, 0.05);
+  --color-shadow-md: rgba(0, 0, 0, 0.1);
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.35s ease;
+  
+  /* Z-Index */
+  --z-toolbar: 999;
+  --z-panel: 1000;
+}

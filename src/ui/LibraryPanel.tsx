@@ -10,12 +10,12 @@ type Props = {
 
 export default function LibraryPanel({ images, onUpload, onSelect }: Props) {
   return (
-    <div className="library-panel">
-      <div className="library-panel-header">
+    <div className="panel">
+      <div className="panel-header">
         <h3>Image Library</h3>
         <ImageUploader onUpload={onUpload} />
       </div>
-      <div className="library-list">
+      <div className="panel-content">
         <ImageLibrary images={images} onSelect={onSelect} />
       </div>
     </div>

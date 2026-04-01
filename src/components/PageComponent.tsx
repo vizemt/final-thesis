@@ -7,7 +7,7 @@ extend({
   Container: PIXI.Container,
 })
 
-type SceneProps = {
+type PageComponentProps = {
   images: CanvasImage[]
   containerRef: React.RefObject<PIXI.Container>
   selectedId: string | null
@@ -16,14 +16,14 @@ type SceneProps = {
   onImageDelete: (id: string) => void
 }
 
-export function Scene({ 
+export function PageComponent({ 
   images, 
   containerRef, 
   selectedId,
   multiSelectedIds,
   onSelect,
   onImageDelete
-}: SceneProps) {
+}: PageComponentProps) {
 
   return (
     <pixiContainer 

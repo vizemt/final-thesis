@@ -1,7 +1,7 @@
 import { Application, extend } from "@pixi/react"
 import * as PIXI from 'pixi.js'
 import { useRef } from "react"
-import { Scene } from "./Scene"
+import { PageComponent } from "./PageComponent"
 import type { CanvasImage } from "../types/CanvasImage"
 
 extend({
@@ -34,7 +34,7 @@ export default function Workspace({
         sharedTicker={true}
         
       >
-        <Scene
+        <PageComponent
           images={images}
           selectedId={selectedId}
           multiSelectedIds={multiSelectedIds}
