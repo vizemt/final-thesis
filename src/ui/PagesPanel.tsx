@@ -1,18 +1,34 @@
-import { usePages } from '../hooks/usePages'
-import { Plus, Copy, Trash2, Edit2 } from 'lucide-react'
+import { Copy, Trash2, Edit2 } from 'lucide-react'
 import { useState } from 'react'
+import type { Page } from '../types/Page'
 
 type PagesPanelProps = {
-  pages: ReturnType<typeof usePages>
+  pages: Page[]
+  activePageId: string
+  onSelectPage: (id: string) => void
+  onAddPage: () => void
+  onDuplicatePage: (pageId: string) => void
+  onDeletePage: (pageId: string) => void
+  onRenamePage: (pageId: string, newName: string) => void
+  onReorderPages: (dragIndex: number, hoverIndex: number) => void
 }
 
-export default function PagesPanel({ pages }: PagesPanelProps) {
+export default function PagesPanel({ 
+  pages, 
+  activePageId, 
+  onSelectPage,
+  onAddPage,
+  onDuplicatePage,
+  onDeletePage,
+  onRenamePage,
+  onReorderPages,
+}: PagesPanelProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
 
   const handleRename = (pageId: string) => {
     if (editName.trim()) {
-      pages.renamePage(pageId, editName.trim())
+      onRenamePage(pageId, editName.trim())
     }
     setEditingId(null)
   }
@@ -29,7 +45,7 @@ export default function PagesPanel({ pages }: PagesPanelProps) {
     e.preventDefault()
     const dragIndex = parseInt(e.dataTransfer.getData('text/plain'))
     if (dragIndex !== dropIndex) {
-      pages.reorderPages(dragIndex, dropIndex)
+      onReorderPages(dragIndex, dropIndex)
     }
   }
 
@@ -38,7 +54,7 @@ export default function PagesPanel({ pages }: PagesPanelProps) {
       <div className="panel-header">
         <h3>Pages</h3>
         <button 
-          onClick={() => pages.addPage()}
+          onClick={() => onAddPage()}
         >
           + Add page
         </button>
@@ -46,15 +62,15 @@ export default function PagesPanel({ pages }: PagesPanelProps) {
 
       <div className="panel-content">
         <div className="item-list">
-          {pages.pages.map((page, index) => (
+          {pages.map((page, index) => (
             <div
               key={page.id}
-              className={`item ${pages.activePageId === page.id ? 'active' : ''}`}
+              className={`item ${activePageId === page.id ? 'active' : ''}`}
               draggable
               onDragStart={(e) => handleDragStart(e, index)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
-              onClick={() => pages.setActivePageId(page.id)}
+              onClick={() => onSelectPage(page.id)}
             >
               <div className="item-info">
                 {editingId === page.id ? (
@@ -93,17 +109,17 @@ export default function PagesPanel({ pages }: PagesPanelProps) {
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    pages.duplicatePage(page.id)
+                    onDuplicatePage(page.id)
                   }}
                   title="Duplicate"
                 >
                   <Copy size={14} />
                 </button>
-                {pages.pages.length > 1 && (
+                {pages.length > 1 && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      pages.deletePage(page.id)
+                      onDeletePage(page.id)
                     }}
                     title="Delete"
                     className="delete-btn"

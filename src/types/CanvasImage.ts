@@ -3,12 +3,12 @@ import type { Layer } from "./Layer"
 export interface CanvasImage {
   id: string
   texture: string
-  x: number
-  y: number
-  width?: number        // Add width for scaling
-  height?: number       // Add height for scaling
-  rotation?: number     // Add rotation in radians
-  scale?: {             // Add scale factor
+  y?: number            // If no position here, drop image on the center
+  x?: number
+  width?: number        // Width for scaling
+  height?: number       // Height for scaling
+  rotation?: number     // Rotation in radians
+  scale?: {             // Scale factor
     x: number
     y: number
   }

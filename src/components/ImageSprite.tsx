@@ -15,8 +15,11 @@ interface ImageSpriteProps {
     image: CanvasImage,
     isSelected: boolean,
     zIndex: number,
+    canvasX: number,
+    canvasY: number,
     onSelect: (id: string, multi: boolean) => void
     onDelete: (id: string) => void
+    onUpdate: (id: string, update: CanvasImage) => void
 }
 
 export function ImageSprite(props: ImageSpriteProps) {
@@ -26,6 +29,20 @@ export function ImageSprite(props: ImageSpriteProps) {
     const [texture] = useState(getTexture(props.image.texture))
     const [isHeld, setIsHeld] = useState(false);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+    // read image props on mount if image was changed before
+    useEffect(() => {
+        const sprite = spriteRef.current;
+        if (!sprite) return;
+
+        if (props.image.width) sprite.width = props.image.width;
+        if (props.image.height) sprite.height = props.image.height;
+        if (props.image.rotation) sprite.rotation = props.image.rotation;
+        if (props.image.scale) {
+            sprite.scale.x = props.image.scale.x;
+            sprite.scale.y = props.image.scale.y;
+        }
+    }, []);
 
     // handle keyboard events
     useEffect(() => {
@@ -70,11 +87,31 @@ export function ImageSprite(props: ImageSpriteProps) {
         }
     }
 
+    const handleMouseUp = () => {
+        setIsHeld(false);
+        props.image.x = containerRef.current.x; // save new position
+        props.image.y = containerRef.current.y;
+        props.onUpdate(props.image.id, props.image);
+    }
+
+    const onTransform = () => {
+        const sprite = spriteRef.current;
+        if (!sprite) return;
+
+        props.onUpdate(props.image.id, { // save new position
+            ...props.image,
+            width: sprite.width,
+            height: sprite.height,
+            rotation: sprite.rotation,
+            scale: { x: sprite.scale.x, y: sprite.scale.y },
+        });
+    };
+
     return (
         <pixiContainer
             ref={containerRef}
-            x={props.image.x ?? 100}
-            y={props.image.y ?? 100}
+            x={props.image.x ?? props.canvasX}
+            y={props.image.y ?? props.canvasY}
             zIndex={props.zIndex}
         >
             <pixiSprite
@@ -83,7 +120,7 @@ export function ImageSprite(props: ImageSpriteProps) {
                 eventMode="static"
                 texture={texture}
                 onMouseDown={handleMouseDown}
-                onMouseUp={() => setIsHeld(false)}
+                onMouseUp={handleMouseUp}
                 onGlobalMouseMove={handleMouseMove}
                 onClick={() => props.onSelect(props.image.id, false)}
             />
@@ -97,6 +134,7 @@ export function ImageSprite(props: ImageSpriteProps) {
                     height={spriteRef.current.height}
                     rotation={spriteRef.current.rotation ?? 0}
                     spriteRef={spriteRef}
+                    onUpdate={onTransform}
                 />
             )}
         </pixiContainer>

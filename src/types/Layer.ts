@@ -1,4 +1,6 @@
 import type { BLEND_MODES } from 'pixi.js'
+import type { CanvasImage } from './CanvasImage'
+import type { GraphicsItem } from './GraphicsItem'
 
 export interface Layer {
   id: string
@@ -9,6 +11,7 @@ export interface Layer {
   groupId?: string
   zIndex: number
   locked?: boolean
+  items?: (CanvasImage | GraphicsItem | Layer)[]
 }
 
 export interface LayerGroup {

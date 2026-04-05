@@ -1,22 +1,89 @@
 /* Works as controller bridge between ui and canvas and inits PIXI Application (root container) */
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Workspace from "./components/Workspace"
 import LibraryPanel from "./ui/LibraryPanel"
 import type { LibraryImage } from "./types/LibraryImage"
 import type { CanvasImage } from "./types/CanvasImage"
 import { LayerPanel } from "./ui/LayerPanel"
-import { useLayers } from "./hooks/useLayers"
 import { useSelection } from "./hooks/useSelection"
 import Toolbar from "./ui/Toolbar"
 import type { ToolbarItem } from "./types/ToolbarItem"
 import PagesPanel from "./ui/PagesPanel"
-import { usePages } from "./hooks/usePages"
+import type { GraphicsItem } from "./types/GraphicsItem"
+import { usePageStore } from "./store/pageStore"
+import { getNextZIndex } from "./store/newId"
 
 export default function App() {
   const [activePanel, setActivePanel] = useState<ToolbarItem>('library')
   const [libraryImages, setLibraryImages] = useState<LibraryImage[]>([])
-  const [canvasImages, setCanvasImages] = useState<CanvasImage[]>([])
-  const pagesManager = usePages([], [])
+  
+  const [canvasParams, setCanvasParams] = useState({
+    width: 1600,
+    height: 2400,
+    color: 0xffffff,
+    cornerRadius: 0,
+  })
+
+  // Derive the background GraphicsItem from canvasParams
+  const backgroundItem: GraphicsItem = useMemo(() => ({
+    id: 'canvas-background',
+    type: 'rect',
+    x: 0,
+    y: 0,
+    width: canvasParams.width,
+    height: canvasParams.height,
+    color: canvasParams.color,
+    cornerRadius: canvasParams.cornerRadius,
+  }), [canvasParams])
+
+  // Get store actions and state
+  const {
+    pages,
+    activePageId,
+    activeLayerId,
+    getActivePage,
+    setActivePageId,
+    addPage,
+    renamePage,
+    getActivePageLayers,
+    deletePage,
+    duplicatePage,
+    addImageToPage,
+    removeImageFromPage,
+    updatePageLayers,
+    updateImage,
+    addLayer,
+    removeLayer,
+    reorderPages,
+    reorderLayers,
+    toggleLayerVisibility,
+    updateLayerOpacity,
+    setActiveLayerId,
+    setBackgroundItem
+  } = usePageStore()
+
+  const {
+    selectedId,
+    multiSelectedIds,
+    select,
+    clearSelection,
+  } = useSelection()
+
+  // Subscribe to active page
+  const activePage = usePageStore(state => state.getActivePage())
+  
+  // Subscribe to active page layers
+  const activePageLayers = usePageStore(state => state.getActivePageLayers())
+  
+  // Get current page images - this will update when activePage changes
+  const activePageImages = useMemo(() => {   
+    return activePage?.images ?? []
+  }, [activePage])
+
+  // Initialize background item in store
+  useEffect(() => {
+    setBackgroundItem(backgroundItem)
+  }, [backgroundItem, setBackgroundItem])
 
   const handleUpload = (files: File[]) => {
     const newImages = files.map(file => ({
@@ -28,45 +95,22 @@ export default function App() {
     setLibraryImages(prev => [...prev, ...newImages])
   }
 
-  const {
-    selectedId,
-    multiSelectedIds,
-    select,
-    clearSelection,
-  } = useSelection()
-
-  const {
-    layers,
-    activeLayerId,
-    addLayer,
-    removeLayer,
-    updateLayer,
-    moveLayer,
-    setActiveLayerId
-  } = useLayers(canvasImages)
-
   // When an image is selected, select its layer
   useEffect(() => {
     if (selectedId) {
-      const selectedImage = canvasImages.find(img => img.id === selectedId)
+      const selectedImage = activePageImages.find(img => img.id === selectedId)
       if (selectedImage && selectedImage.layer?.id !== activeLayerId) {
         setActiveLayerId(selectedImage.layer.id)
       }
-    } else if (multiSelectedIds.size > 0) {
-      // const firstSelectedId = Array.from(multiSelectedIds)[0]
-      // const firstSelectedImage = canvasImages.find(img => img.id === firstSelectedId)
-      // if (firstSelectedImage && firstSelectedImage.layer?.id !== activeLayerId) {
-      //   setActiveLayerId(firstSelectedImage.layer.id)
-      // }
     }
-  }, [selectedId, multiSelectedIds, canvasImages, activeLayerId, setActiveLayerId])
+  }, [selectedId, activePageImages, activeLayerId, setActiveLayerId])
 
-  // Sync: When layer is selected, select all images in that layer
+  // When layer is selected, select all images in that layer
   const handleSelectLayer = (layerId: string) => {
     setActiveLayerId(layerId)
     
     // Find all images in this layer
-    const imagesInLayer = canvasImages.filter(img => img.layer?.id === layerId)
+    const imagesInLayer = activePageImages.filter(img => img.layer?.id === layerId)
     
     if (imagesInLayer.length === 1) {
       // Single image - select it
@@ -85,14 +129,20 @@ export default function App() {
 
   const addImageToCanvas = async (img: LibraryImage) => {
     const dimensions = await getImageDimensions(img.preview)
-
-    const newLayer = addLayer()
+    const newZIndex = getNextZIndex()
     
+    // Add new layer for the image
+    const newLayer = addLayer({
+      name: `Layer ${newZIndex}`,
+      visible: true,
+      opacity: 1,
+      items: [],
+      zIndex: newZIndex
+    })
+
     const newCanvasImage: CanvasImage = {
       id: crypto.randomUUID(),
       texture: img.preview,
-      x: 200,
-      y: 200,
       originalWidth: dimensions.width,
       originalHeight: dimensions.height,
       scale: { x: 1, y: 1 },
@@ -100,104 +150,78 @@ export default function App() {
       layer: newLayer
     }
 
-    setCanvasImages(prev => [...prev, newCanvasImage])
+    // Add to active page
+    addImageToPage(activePageId, newCanvasImage)
   }
 
-  // Update image zIndex when layer zIndex changes
-  const updateImagesLayerZIndex = useCallback((layerId: string, newZIndex: number) => {
-    setCanvasImages(prev => 
-      prev.map(img => 
-        img.layer?.id === layerId 
-          ? { ...img, layer: { ...img.layer, zIndex: newZIndex } }
-          : img
-      )
-    )
-  }, [])
-
-  // Listen to layer changes and update corresponding images
-  useEffect(() => {
-    // This effect runs whenever layers change
-    layers.forEach(layer => {
-      // Find all images in this layer and ensure they have the correct zIndex
-      setCanvasImages(prev => {
-        let needsUpdate = false
-        const updatedImages = prev.map(img => {
-          if (img.layer?.id === layer.id && img.layer.zIndex !== layer.zIndex) {
-            needsUpdate = true
-            return { ...img, layer: { ...img.layer, zIndex: layer.zIndex } }
-          }
-          return img
-        })
-        return needsUpdate ? updatedImages : prev
-      })
-    })
-  }, [layers])
-
-  // Custom moveLayer function that also updates images
-  const handleMoveLayer = useCallback((layerId: string, direction: 'up' | 'down') => {
-    // Store old zIndex values before moving
-    const oldLayers = [...layers]
-    
-    // Perform the move
-    moveLayer(layerId, direction)
-    
-    // After move, the layers state will update and the useEffect above will sync images
-    // We need to know which layers were swapped to update images immediately
-    const movedLayer = layers.find(l => l.id === layerId)
-    if (movedLayer) {
-      updateImagesLayerZIndex(layerId, movedLayer.zIndex)
-      
-      // Find which layer was swapped with
-      const swappedLayer = layers.find(l => 
-        l.id !== layerId && 
-        oldLayers.find(old => old.id === l.id)?.zIndex !== l.zIndex
-      )
-      
-      if (swappedLayer) {
-        updateImagesLayerZIndex(swappedLayer.id, swappedLayer.zIndex)
-      }
-    }
-  }, [layers, moveLayer, updateImagesLayerZIndex])
-
-  // When an image is deleted, handle selection cleanup
+  // When an image is deleted, handle selection cleanup and empty layer removal
   const handleImageDelete = (imageId: string) => {
-    setCanvasImages(prev => prev.filter(img => img.id !== imageId))
+    const imageToDelete = activePageImages.find(img => img.id === imageId)
+    removeImageFromPage(activePageId, imageId)
+    
     if (selectedId === imageId) {
       clearSelection()
     } else if (multiSelectedIds.has(imageId)) {
       const newMultiSelected = new Set(multiSelectedIds)
       newMultiSelected.delete(imageId)
-      // Update selection state if needed
       select(Array.from(newMultiSelected)[0] || '', false)
+    }
+
+    // Check if the layer is now empty and remove it (if not default)
+    if (imageToDelete && imageToDelete.layer?.id !== 'default') {
+      const remainingImagesInLayer = activePageImages.filter(
+        img => img.layer?.id === imageToDelete.layer?.id && img.id !== imageId
+      )
+      
+      if (remainingImagesInLayer.length === 0) {
+        removeLayer(imageToDelete.layer.id)
+      }
     }
   }
 
-const cleanupEmptyLayers = useCallback(() => {
-  // Get all layer IDs that currently have an image
-  const usedLayerIds = new Set(
-    canvasImages
-      .map(img => img.layer?.id)
-      .filter(Boolean) as string[]
-  )
+  const handleImageUpdate = useCallback((imageId: string, updates: Partial<CanvasImage>) => {
+    console.log(updates);
+    
+    updateImage(activePageId, imageId, updates)
+  }, [activePageId, updateImage])
 
-  // Find empty layers (excluding default)
-  const emptyLayers = layers.filter(
-    layer => layer.id !== 'default' && !usedLayerIds.has(layer.id)
-  )
+  // Get layers for current page
+  const currentLayers = getActivePageLayers()
 
-  // Remove empty layers
-  emptyLayers.forEach(layer => removeLayer(layer.id))
+  // Handle moving layers
+  const handleMoveLayer = useCallback((layerId: string, direction: 'up' | 'down') => {
+    const currentIndex = currentLayers.findIndex(l => l.id === layerId)
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+    
+    if (targetIndex >= 0 && targetIndex < currentLayers.length) {
+      reorderLayers(currentIndex, targetIndex)
+    }
+  }, [currentLayers, reorderLayers])
 
-  // Reset active layer if it was removed
-  if (emptyLayers.some(layer => layer.id === activeLayerId)) {
-    setActiveLayerId('default')
-  }
-}, [canvasImages, layers, removeLayer, activeLayerId, setActiveLayerId])
+  // Handle layer deletion with image cleanup
+  const handleRemoveLayer = useCallback((layerId: string) => {
+    // Remove all images in this layer
+    const imagesInLayer = activePageImages.filter(img => img.layer?.id === layerId)
+    imagesInLayer.forEach(img => {
+      removeImageFromPage(activePageId, img.id)
+    })
+    
+    // Remove the layer
+    removeLayer(layerId)
+    
+    // Clear selection if the deleted layer was selected
+    if (activeLayerId === layerId) {
+      clearSelection()
+    }
+  }, [activePageImages, activePageId, removeImageFromPage, removeLayer, activeLayerId, clearSelection])
 
-  // Run cleanup whenever images change
-  useEffect(() => {
-    cleanupEmptyLayers()
-  }, [cleanupEmptyLayers])
+  // Handle page deletion
+  const handleDeletePage = useCallback((pageId: string) => {
+    const success = deletePage(pageId)
+    if (success && activePageId === pageId) {
+      clearSelection()
+    }
+  }, [deletePage, activePageId, clearSelection])
 
   return (
     <div className="editor">
@@ -205,29 +229,33 @@ const cleanupEmptyLayers = useCallback(() => {
         activePanel={activePanel} 
         onPanelChange={setActivePanel} 
       />
+      
       {activePanel === 'layers' && (
         <LayerPanel
-          layers={layers}
+          layers={activePageLayers}
           activeLayerId={activeLayerId}
           onSelectLayer={handleSelectLayer}
-          onToggleVisibility={(id) => updateLayer(id, { visible: !layers.find(l => l.id === id)?.visible })}
-          onToggleLock={(id) => updateLayer(id, { locked: !layers.find(l => l.id === id)?.locked })}
-          onRemoveLayer={(id) => {
-            // clear images
-            setCanvasImages(prev => prev.filter(img => img.layer?.id !== id))
-            removeLayer(id)
-            // clear selection if the deleted layer was selected
-            if (activeLayerId === id) {
-              clearSelection()
-            }
+          onToggleVisibility={toggleLayerVisibility}
+          onToggleLock={(id) => {
+            //toggle here
           }}
+          onRemoveLayer={handleRemoveLayer}
           onMoveLayer={handleMoveLayer}
-          onOpacityChange={(id, opacity) => updateLayer(id, { opacity })}
+          onOpacityChange={updateLayerOpacity}
         />
       )}
 
       {activePanel === 'pages' && (
-        <PagesPanel pages={pagesManager} />
+        <PagesPanel 
+          pages={pages}
+          activePageId={activePageId}
+          onSelectPage={setActivePageId}
+          onAddPage={() => addPage(backgroundItem)}
+          onDuplicatePage={duplicatePage}
+          onDeletePage={handleDeletePage}
+          onRenamePage={renamePage}
+          onReorderPages={reorderPages}
+        />
       )}
       
       {activePanel === 'library' && (
@@ -239,11 +267,13 @@ const cleanupEmptyLayers = useCallback(() => {
       )}
 
       <Workspace 
-        images={canvasImages}
+        images={activePageImages}
         selectedId={selectedId}
         multiSelectedIds={multiSelectedIds}
         onSelect={select}
         onImageDelete={handleImageDelete}
+        onImageUpdate={handleImageUpdate}
+        canvasParams={canvasParams}
       />
     </div>
   )

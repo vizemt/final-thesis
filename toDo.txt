@@ -1,0 +1,6 @@
+- Browser scaling affects all DOM, but doesn't affect pixi app. todo scaling and moving camera on workspace
+- There is only center transforming. Need to add second one. And fix needed anyway
+- Add multiple selection
+- Add settings to adjust page dimentions
+- Add page and layer preview
+- Add save

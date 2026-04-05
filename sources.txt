@@ -14,3 +14,4 @@ https://www.howtolovecomics.com/comic-book-glossary-of-terms/
 13. How to render a list in React - https://coreui.io/answers/how-to-render-a-list-in-react/
 14. about pixi sprite - https://api.pixijs.io/@pixi/sprite/PIXI/Sprite.html
 15. Vector rendering of SVG content with PixiJS - https://javascript.plainenglish.io/vector-rendering-of-svg-content-with-pixijs-6f26c91f09ee
+16. about pages - https://www.automateed.com/book-cover-size-pixels

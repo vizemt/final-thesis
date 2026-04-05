@@ -1,10 +1,12 @@
 import type { CanvasImage } from "./CanvasImage"
+import type { GraphicsItem } from "./GraphicsItem"
 import type { Layer } from "./Layer"
 
 export type Page = {
   id: string
   name: string
-  images: CanvasImage[]
+  images?: CanvasImage[]
+  graphicsItems?: GraphicsItem[]
   layers: Layer[]
   order: number
   thumbnail?: string

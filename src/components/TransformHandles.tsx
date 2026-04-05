@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { extend } from '@pixi/react';
 
 extend({
@@ -7,8 +7,8 @@ extend({
   Container: PIXI.Container,
 });
 
-const HANDLE_SIZE = 8;
-const ROTATE_OFFSET = 24;
+const HANDLE_SIZE = 16;
+const ROTATE_OFFSET = 64;
 const HANDLE_COLOR = 0xffffff;
 const BORDER_COLOR = 0x4A90E2;
 const ROTATE_COLOR = 0x4A90E2;
@@ -32,10 +32,11 @@ interface TransformHandlesProps {
   height: number;
   rotation: number;
   id: string;
+  onUpdate: () => void;
 }
 
 export function TransformHandles({
-  spriteRef, x, y, width, height, rotation, id,
+  spriteRef, x, y, width, height, rotation, id, onUpdate
 }: TransformHandlesProps) {
   const [isHeld, setIsHeld] = useState(false);
   const containerRef = useRef<PIXI.Container>(null);
@@ -49,12 +50,10 @@ export function TransformHandles({
     startRotation: number;
   } | null>(null);
 
-  const hw = width / 2;
-  const hh = height / 2;
-
   const handlePointerUp = () => {
     setIsHeld(false);
     dragState.current = null;
+    onUpdate();
   };
 
   const handleGlobalMove = (e: PIXI.FederatedPointerEvent) => {
@@ -78,57 +77,54 @@ export function TransformHandles({
     if (state.type === 'rotate') {
       const angle = Math.atan2(e.globalY - sprite.parent.y, e.globalX - sprite.parent.x);
       sprite.rotation = angle + Math.PI / 2;
-    }
+    };
+    redrawHandles(sprite.width, sprite.height, sprite.rotation);
   };
 
-  useEffect(() => {
+  const redrawHandles = useCallback((w: number, h: number, rot: number) => {
     const container = containerRef.current;
     if (!container) return;
 
+    const hw = w / 2;
+    const hh = h / 2;
+    container.x = x; 
+    container.y = y; 
+    container.rotation = rot;
     container.removeChildren();
-    container.x = x;
-    container.y = y;
-    container.rotation = rotation;
 
     // Border
     const border = new PIXI.Graphics();
-    border.setStrokeStyle({ width: 1.5, color: BORDER_COLOR, alpha: 0.9 });
-    border.rect(-hw, -hh, width, height);
+    border.setStrokeStyle({ width: 2.5, color: BORDER_COLOR });
+    border.rect(-hw, -hh, w, h);
     border.stroke();
     container.addChild(border);
 
-    // Resize handles
     for (const handle of RESIZE_HANDLES) {
       const g = new PIXI.Graphics();
       g.setFillStyle({ color: HANDLE_COLOR });
-      g.setStrokeStyle({ width: 1.5, color: BORDER_COLOR });
+      g.setStrokeStyle({ width: 2.5, color: BORDER_COLOR });
       g.rect(-HANDLE_SIZE / 2, -HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE);
       g.fill();
       g.stroke();
-      g.x = handle.rx * width;
-      g.y = handle.ry * height;
+      g.x = handle.rx * w;
+      g.y = handle.ry * h;
       g.eventMode = 'static';
       g.cursor = handle.cursor;
       g.hitArea = new PIXI.Rectangle(-HANDLE_SIZE / 2, -HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE);
-
       g.on('pointerdown', (e) => {
         e.stopPropagation();
         dragState.current = {
-          type: 'resize',
-          handle: handle.id,
-          startX: e.globalX,
-          startY: e.globalY,
+          type: 'resize', handle: handle.id,
+          startX: e.globalX, startY: e.globalY,
           startWidth: spriteRef.current?.width ?? 0,
           startHeight: spriteRef.current?.height ?? 0,
           startRotation: spriteRef.current?.rotation ?? 0,
         };
         setIsHeld(true);
       });
-
       container.addChild(g);
     }
 
-    // Rotate line
     const line = new PIXI.Graphics();
     line.setStrokeStyle({ width: 1, color: BORDER_COLOR, alpha: 0.7 });
     line.moveTo(0, -hh);
@@ -136,7 +132,6 @@ export function TransformHandles({
     line.stroke();
     container.addChild(line);
 
-    // Rotate handle
     const rotateG = new PIXI.Graphics();
     rotateG.setFillStyle({ color: ROTATE_COLOR });
     rotateG.circle(0, 0, HANDLE_SIZE / 2 + 2);
@@ -146,22 +141,21 @@ export function TransformHandles({
     rotateG.eventMode = 'static';
     rotateG.cursor = 'grab';
     rotateG.hitArea = new PIXI.Circle(0, 0, HANDLE_SIZE / 2 + 2);
-
     rotateG.on('pointerdown', (e) => {
       e.stopPropagation();
       dragState.current = {
-        type: 'rotate',
-        handle: 'rotate',
-        startX: e.globalX,
-        startY: e.globalY,
+        type: 'rotate', handle: 'rotate',
+        startX: e.globalX, startY: e.globalY,
         startRotation: spriteRef.current?.rotation ?? 0,
       };
       setIsHeld(true);
     });
-
     container.addChild(rotateG);
+  }, [spriteRef, dragState, x, y]);
 
-  }, [x, y, width, height, rotation, hw, hh, id]);
+  useEffect(() => {
+    redrawHandles(width, height, rotation);
+  }, [width, height, rotation, x, y, id]);
 
   return (
     <pixiContainer

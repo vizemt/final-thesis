@@ -1,15 +1,30 @@
 import { useState, useCallback, useEffect } from 'react'
 import type { Layer, LayerGroup } from '../types/Layer'
 import type { CanvasImage } from '../types/CanvasImage'
-import { getNextZIndex } from '../utils/newId'
+import { getNextZIndex } from '../store/newId'
+import type { GraphicsItem } from '../types/GraphicsItem'
 
-export function useLayers(initialImages: CanvasImage[]) {
+export function useLayers(initialImages: CanvasImage[], backgroundItem?: GraphicsItem) {
   const [layers, setLayers] = useState<Layer[]>([
-    { id: 'default', name: 'Background', visible: true, opacity: 1, zIndex: 0 }
+    { id: 'default', name: 'Background', visible: true, opacity: 1, zIndex: 0, items: backgroundItem ? [backgroundItem] : []}
   ])
   
   const [activeLayerId, setActiveLayerId] = useState<string>('default')
   const [layerGroups, setLayerGroups] = useState<LayerGroup[]>([])
+
+  // Sync backgroundItem into the default layer whenever it changes
+  useEffect(() => {
+    if (!backgroundItem) return
+    setLayers(prev => prev.map(layer =>
+      layer.id === 'default'
+        ? { ...layer, items: [backgroundItem] }
+        : layer
+    ))
+  }, [backgroundItem])
+  
+  const setNewLayers = useCallback((newLayers: Layer[]) => {
+    setLayers(newLayers)
+  }, [])
 
   // Organize images by layer
   const imagesByLayer = useCallback(() => {
@@ -117,6 +132,7 @@ export function useLayers(initialImages: CanvasImage[]) {
     layers,
     activeLayerId,
     layerGroups,
+    setNewLayers,
     imagesByLayer,
     addLayer,
     removeLayer,
