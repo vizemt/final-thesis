@@ -38,12 +38,13 @@ export default function App() {
 
   // Get store actions and state
   const {
-    pages,
+    rootPage,
     activePageId,
     activeLayerId,
     getActivePage,
     setActivePageId,
     addPage,
+    addBranch,
     renamePage,
     getActivePageLayers,
     deletePage,
@@ -54,7 +55,6 @@ export default function App() {
     updateImage,
     addLayer,
     removeLayer,
-    reorderPages,
     reorderLayers,
     toggleLayerVisibility,
     updateLayerOpacity,
@@ -179,27 +179,29 @@ export default function App() {
     }
   }
 
-  const handleImageUpdate = useCallback((imageId: string, updates: Partial<CanvasImage>) => {
-    console.log(updates);
-    
+  const handleImageUpdate = useCallback((imageId: string, updates: Partial<CanvasImage>) => {    
     updateImage(activePageId, imageId, updates)
   }, [activePageId, updateImage])
 
-  // Get layers for current page
-  const currentLayers = getActivePageLayers()
-
-  // Handle moving layers
-  const handleMoveLayer = useCallback((layerId: string, direction: 'up' | 'down') => {
-    const currentIndex = currentLayers.findIndex(l => l.id === layerId)
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
-    
-    if (targetIndex >= 0 && targetIndex < currentLayers.length) {
-      reorderLayers(currentIndex, targetIndex)
-    }
-  }, [currentLayers, reorderLayers])
 
   // Handle layer deletion with image cleanup
   const handleRemoveLayer = useCallback((layerId: string) => {
+    // Remove all images in this layer
+    const imagesInLayer = activePageImages.filter(img => img.layer?.id === layerId)
+    imagesInLayer.forEach(img => {
+      removeImageFromPage(activePageId, img.id)
+    })
+    
+    // Remove the layer
+    removeLayer(layerId)
+    
+    // Clear selection if the deleted layer was selected
+    if (activeLayerId === layerId) {
+      clearSelection()
+    }
+  }, [activePageImages, activePageId, removeImageFromPage, removeLayer, activeLayerId, clearSelection])
+
+  const handleMoveLayer = useCallback((layerId: string) => {
     // Remove all images in this layer
     const imagesInLayer = activePageImages.filter(img => img.layer?.id === layerId)
     imagesInLayer.forEach(img => {
@@ -247,14 +249,14 @@ export default function App() {
 
       {activePanel === 'pages' && (
         <PagesPanel 
-          pages={pages}
+          rootPage={rootPage}
           activePageId={activePageId}
           onSelectPage={setActivePageId}
           onAddPage={() => addPage(backgroundItem)}
+          onAddBranch={(parentId) => addBranch(backgroundItem, parentId)}
           onDuplicatePage={duplicatePage}
-          onDeletePage={handleDeletePage}
+          onDeletePage={handleDeletePage}                                                   
           onRenamePage={renamePage}
-          onReorderPages={reorderPages}
         />
       )}
       

@@ -3,37 +3,41 @@ import type { Page } from '../types/Page'
 import type { CanvasImage } from '../types/CanvasImage'
 import type { Layer } from '../types/Layer'
 import type { GraphicsItem } from '../types/GraphicsItem'
+import { deletePage, findPage, updatePage, flattenPages, countPages } from '../utils/treeUtils'
 
 const DEFAULT_PAGE_ID = 'page-1'
 
 type PageStore = {
-    pages: Page[]
+    rootPage: Page
     activePageId: string
+    activeLayerId: string | null
 
     // getters
     getActivePage: () => Page | undefined
     getActivePageLayers: () => Layer[]
     getLayerById: (layerId: string) => Layer | undefined
     getLayerIndex: (layerId: string) => number
+    getAllPages: () => Page[]
 
     // page actions
     setActivePageId: (id: string) => void
     addPage: (backgroundItem?: GraphicsItem, name?: string) => string
+    addBranch: (backgroundItem?: GraphicsItem, parentId?: string) => string
     duplicatePage: (pageId: string) => void
     deletePage: (pageId: string) => boolean
     renamePage: (pageId: string, newName: string) => void
-    reorderPages: (dragIndex: number, hoverIndex: number) => void
 
     // image actions
     addImageToPage: (pageId: string, image: CanvasImage) => void
     removeImageFromPage: (pageId: string, imageId: string) => void
     updatePageImages: (pageId: string, images: CanvasImage[]) => void
+    setBackgroundItem: (backgroundItem?: GraphicsItem) => void
 
     // layer actions
     updatePageLayers: (pageId: string, layers: Layer[]) => void
     updateImage: (pageId: string, imageId: string, updates: Partial<CanvasImage>) => void
     updateImageLayer: (pageId: string, imageId: string, layerId: string) => void
-    addLayer: (layer: Omit<Layer, 'id'>) => Layer
+    addLayer: (layer: Omit<Layer, 'id'>) => Layer | undefined
     removeLayer: (layerId: string) => void
     duplicateLayer: (layerId: string) => void
     renameLayer: (layerId: string, newName: string) => void
@@ -46,226 +50,215 @@ type PageStore = {
     updateLayerItems: (layerId: string, items: GraphicsItem[]) => void
     setActiveLayerId: (layerId: string | null) => void
 
-    // background
-    setBackgroundItem: (backgroundItem?: GraphicsItem) => void
+}
 
-    // ui state
-    activeLayerId: string | null
+function makeDefaultLayer(backgroundItem?: GraphicsItem): Layer {
+    return {
+        id: 'default',
+        name: 'Background',
+        visible: true,
+        opacity: 1,
+        zIndex: 0,
+        items: backgroundItem ? [backgroundItem] : [],
+    }
 }
 
 export const usePageStore = create<PageStore>((set, get) => ({
-    pages: [
-        {
-            id: DEFAULT_PAGE_ID,
-            name: 'Page 1',
-            images: [],
-            layers: [],
-            order: 0
-        }
-    ],
+    rootPage: {
+        id: DEFAULT_PAGE_ID,
+        name: 'Page 1',
+        images: [],
+        layers: [makeDefaultLayer()],
+        order: 0,
+        parentPageId: null,
+        childrenPages: [],
+    },
     activePageId: DEFAULT_PAGE_ID,
     activeLayerId: null,
 
-    getActivePage: () =>
-        get().pages.find(p => p.id === get().activePageId),
+    // Getters _____________________________________________
 
-    getActivePageLayers: () => {
-        const activePage = get().getActivePage()
-        return activePage?.layers || []
-    },
+    getAllPages: () => flattenPages(get().rootPage),
 
-    getLayerById: (layerId: string) => {
-        const activePage = get().getActivePage()
-        return activePage?.layers.find(l => l.id === layerId)
-    },
+    getActivePage: () => findPage(get().rootPage, get().activePageId),
 
-    getLayerIndex: (layerId: string) => {
-        const layers = get().getActivePageLayers()
-        return layers.findIndex(l => l.id === layerId)
-    },
+    getActivePageLayers: () => get().getActivePage()?.layers ?? [],
 
-    setActivePageId: (id) => set({
-        activePageId: id,
-        activeLayerId: null // Reset active layer when changing page
-    }),
-    
+    getLayerById: (layerId) =>
+        get().getActivePage()?.layers.find(l => l.id === layerId),
+
+    getLayerIndex: (layerId) =>
+        get().getActivePageLayers().findIndex(l => l.id === layerId),
+
+    // Page actions _____________________________________________
+
+    setActivePageId: (id) => set({ activePageId: id, activeLayerId: null }),
+
+    // Adds a top-level child page to the root.
+    // Returns the new page's id.
     addPage: (backgroundItem, name) => {
-        const pages = get().pages
+        const total = countPages(get().rootPage)
+        const newPage: Page = {
+            id: crypto.randomUUID(),
+            name: name ?? `Page ${total + 1}`,
+            images: [],
+            layers: [makeDefaultLayer(backgroundItem)],
+            order: total,
+            parentPageId: get().rootPage.id,
+            childrenPages: [],
+        }
+
+        set(s => ({
+            rootPage: {
+                ...s.rootPage,
+                childrenPages: [...s.rootPage.childrenPages, newPage],
+            },
+            activePageId: newPage.id,
+            activeLayerId: null,
+        }))
+
+        return newPage.id
+    },
+
+    // Adds a branch (child page) under the given parent
+    // Returns the new page's id.
+    addBranch: (backgroundItem, parentId) => {
+        const resolvedParentId = parentId ?? get().activePageId
+        const parent = findPage(get().rootPage, resolvedParentId)
+        if (!parent) return ''
 
         const newPage: Page = {
             id: crypto.randomUUID(),
-            name: name || `Page ${pages.length + 1}`,
+            name: `${parent.name} – Branch ${parent.childrenPages.length + 1}`,
             images: [],
-            layers: [
-                {
-                    id: 'default',
-                    name: 'Background',
-                    visible: true,
-                    opacity: 1,
-                    zIndex: 0,
-                    items: backgroundItem ? [backgroundItem] : []
-                }
-            ],
-            order: pages.length
+            layers: [makeDefaultLayer(backgroundItem)],
+            order: parent.childrenPages.length,
+            parentPageId: resolvedParentId,
+            childrenPages: [],
         }
 
-        set({
-            pages: [...pages, newPage],
+        set(s => ({
+            rootPage: updatePage(s.rootPage, resolvedParentId, p => ({
+                ...p,
+                childrenPages: [...p.childrenPages, newPage],
+            })),
             activePageId: newPage.id,
-            activeLayerId: null
-        })
+            activeLayerId: null,
+        }))
 
         return newPage.id
     },
 
     duplicatePage: (pageId) => {
-        const pages = get().pages
-        const page = pages.find(p => p.id === pageId)
+        const page = findPage(get().rootPage, pageId)
         if (!page) return
+
+        const parentId = page.parentPageId ?? get().rootPage.id
 
         const duplicated: Page = {
             ...page,
             id: crypto.randomUUID(),
             name: `${page.name} (Copy)`,
-            images: page.images?.map(img => ({
-                ...img,
-                id: crypto.randomUUID(),
-                layer: { ...img.layer, id: crypto.randomUUID() }
-            })),
-            layers: page.layers.map(layer => ({
-                ...layer,
-                id: crypto.randomUUID()
-            })),
-            order: pages.length
+            images: page.images?.map(img => ({ ...img, id: crypto.randomUUID() })),
+            layers: page.layers.map(layer => ({ ...layer, id: crypto.randomUUID() })),
+            // Duplicate keeps same parent but starts with no children of its own
+            childrenPages: [],
+            parentPageId: parentId,
+            order: countPages(get().rootPage),
         }
 
-        set({
-            pages: [...pages, duplicated],
+        set(s => ({
+            rootPage: updatePage(s.rootPage, parentId, p => ({
+                ...p,
+                childrenPages: [...p.childrenPages, duplicated],
+            })),
             activePageId: duplicated.id,
-            activeLayerId: null
-        })
+            activeLayerId: null,
+        }))
     },
 
     deletePage: (pageId) => {
-        const { pages, activePageId } = get()
+        if (pageId === get().rootPage.id) return false // never delete root
 
-        if (pages.length === 1) return false
+        const all = flattenPages(get().rootPage)
+        if (all.length === 1) return false
 
-        const filtered = pages.filter(p => p.id !== pageId)
-            .map((p, i) => ({ ...p, order: i }))
+        const newRoot = deletePage(get().rootPage, pageId)
 
-        set({
-            pages: filtered,
-            activePageId:
-                activePageId === pageId
-                    ? filtered[0]?.id
-                    : activePageId,
-            activeLayerId: null
-        })
+        // If the active page is deleted, fall back to root
+        const nextActiveId =
+            get().activePageId === pageId
+                ? newRoot.id
+                : get().activePageId
 
+        set({ rootPage: newRoot, activePageId: nextActiveId, activeLayerId: null })
         return true
     },
 
-    renamePage: (pageId, newName) => {
-        set({
-            pages: get().pages.map(p =>
-                p.id === pageId ? { ...p, name: newName } : p
-            )
-        })
-    },
+    renamePage: (pageId, newName) =>
+        set(s => ({
+            rootPage: updatePage(s.rootPage, pageId, p => ({ ...p, name: newName })),
+        })),
 
-    reorderPages: (dragIndex, hoverIndex) => {
-        const pages = [...get().pages]
-        const dragged = pages[dragIndex]
+    // Image actions ____________________________________________
+    addImageToPage: (pageId, image) =>
+        set(s => ({
+            rootPage: updatePage(s.rootPage, pageId, p => ({
+                ...p,
+                images: [...(p.images ?? []), image],
+            })),
+        })),
 
-        pages.splice(dragIndex, 1)
-        pages.splice(hoverIndex, 0, dragged)
+    removeImageFromPage: (pageId, imageId) =>
+        set(s => ({
+            rootPage: updatePage(s.rootPage, pageId, p => ({
+                ...p,
+                images: (p.images ?? []).filter(img => img.id !== imageId),
+            })),
+        })),
 
-        set({
-            pages: pages.map((p, i) => ({ ...p, order: i }))
-        })
-    },
+    updatePageImages: (pageId, images) =>
+        set(s => ({
+            rootPage: updatePage(s.rootPage, pageId, p => ({ ...p, images })),
+        })),
 
-    addImageToPage: (pageId, image) => {
-        set({
-            pages: get().pages.map(p =>
-                p.id === pageId
-                    ? { ...p, images: [...(p.images || []), image] }
-                    : p
-            )
-        })
-    },
+    updateImage: (pageId, imageId, updates) =>
+        set(s => ({
+            rootPage: updatePage(s.rootPage, pageId, p => ({
+                ...p,
+                images: (p.images ?? []).map(img =>
+                    img.id === imageId ? { ...img, ...updates } : img
+                ),
+            })),
+        })),
 
-    removeImageFromPage: (pageId, imageId) => {
-        set({
-            pages: get().pages.map(p =>
-                p.id === pageId
-                    ? {
-                        ...p,
-                        images: (p.images || []).filter(img => img.id !== imageId)
-                    }
-                    : p
-            )
-        })
-    },
-
-    updateImage: (pageId: string, imageId: string, updates: Partial<CanvasImage>) => {
-        set({
-            pages: get().pages.map(page =>
-                page.id === pageId
-                    ? {
-                        ...page,
-                        images: (page.images || []).map(img =>
-                            img.id === imageId ? { ...img, ...updates } : img
-                        )
-                    }
-                    : page
-            )
-        })
-    },
-
-    updateImageLayer: (pageId: string, imageId: string, layerId: string) => {
-        const page = get().pages.find(p => p.id === pageId)
+    updateImageLayer: (pageId, imageId, layerId) => {
+        const page = findPage(get().rootPage, pageId)
         const layer = page?.layers.find(l => l.id === layerId)
-
         if (!layer) return
 
-        set({
-            pages: get().pages.map(page =>
-                page.id === pageId
-                    ? {
-                        ...page,
-                        images: (page.images || []).map(img =>
-                            img.id === imageId
-                                ? { ...img, layer: { ...layer, id: layerId } }
-                                : img
-                        )
-                    }
-                    : page
-            )
-        })
+        set(s => ({
+            rootPage: updatePage(s.rootPage, pageId, p => ({
+                ...p,
+                images: (p.images ?? []).map(img =>
+                    img.id === imageId
+                        ? { ...img, layer: { ...layer, id: layerId } }
+                        : img
+                ),
+            })),
+        }))
     },
 
-    updatePageImages: (pageId, images) => {
-        set({
-            pages: get().pages.map(p =>
-                p.id === pageId ? { ...p, images } : p
-            )
-        })
-    },
+    // Layer actions ____________________________________________
 
-    updatePageLayers: (pageId, layers) => {
-        set({
-            pages: get().pages.map(p =>
-                p.id === pageId ? { ...p, layers } : p
-            )
-        })
-    },
+    updatePageLayers: (pageId, layers) =>
+        set(s => ({
+            rootPage: updatePage(s.rootPage, pageId, p => ({ ...p, layers })),
+        })),
 
-    // Layer actions
     addLayer: (layer) => {
         const activePage = get().getActivePage()
-        if (!activePage) return
+        if (!activePage) return undefined
 
         const newLayer: Layer = {
             ...layer,
@@ -273,243 +266,161 @@ export const usePageStore = create<PageStore>((set, get) => ({
             visible: layer.visible ?? true,
             opacity: layer.opacity ?? 1,
             zIndex: activePage.layers.length,
-            items: layer.items || []
+            items: layer.items ?? [],
         }
 
-        set({
-            pages: get().pages.map(page =>
-                page.id === activePage.id
-                    ? { ...page, layers: [...page.layers, newLayer] }
-                    : page
-            ),
-            activeLayerId: newLayer.id
-        })
+        set(s => ({
+            rootPage: updatePage(s.rootPage, s.activePageId, p => ({
+                ...p,
+                layers: [...p.layers, newLayer],
+            })),
+            activeLayerId: newLayer.id,
+        }))
 
         return newLayer
     },
 
     removeLayer: (layerId) => {
         const activePage = get().getActivePage()
-        if (!activePage) return
+        if (!activePage || activePage.layers.length === 1) return
 
-        // Don't allow removing the last layer
-        if (activePage.layers.length === 1) {
-            console.warn('Cannot remove the last layer')
-            return
-        }
-
-        set({
-            pages: get().pages.map(page =>
-                page.id === activePage.id
-                    ? { ...page, layers: page.layers.filter(l => l.id !== layerId) }
-                    : page
-            ),
-            activeLayerId: get().activeLayerId === layerId ? null : get().activeLayerId
-        })
+        set(s => ({
+            rootPage: updatePage(s.rootPage, s.activePageId, p => ({
+                ...p,
+                layers: p.layers.filter(l => l.id !== layerId),
+            })),
+            activeLayerId:
+                get().activeLayerId === layerId ? null : get().activeLayerId,
+        }))
     },
 
     duplicateLayer: (layerId) => {
         const activePage = get().getActivePage()
         if (!activePage) return
 
-        const layerToDuplicate = activePage.layers.find(l => l.id === layerId)
-        if (!layerToDuplicate) return
+        const src = activePage.layers.find(l => l.id === layerId)
+        if (!src) return
 
-        const duplicatedLayer: Layer = {
-            ...layerToDuplicate,
+        const duplicated: Layer = {
+            ...src,
             id: crypto.randomUUID(),
-            name: `${layerToDuplicate.name} (Copy)`,
-            items: layerToDuplicate.items.map(item => ({
-                ...item,
-                id: crypto.randomUUID()
-            }))
+            name: `${src.name} (Copy)`,
+            items: src.items.map(item => ({ ...item, id: crypto.randomUUID() })),
         }
 
-        set({
-            pages: get().pages.map(page =>
-                page.id === activePage.id
-                    ? { ...page, layers: [...page.layers, duplicatedLayer] }
-                    : page
-            )
-        })
+        set(s => ({
+            rootPage: updatePage(s.rootPage, s.activePageId, p => ({
+                ...p,
+                layers: [...p.layers, duplicated],
+            })),
+        }))
     },
 
-    renameLayer: (layerId, newName) => {
-        const activePage = get().getActivePage()
-        if (!activePage) return
-
-        set({
-            pages: get().pages.map(page =>
-                page.id === activePage.id
-                    ? {
-                        ...page,
-                        layers: page.layers.map(layer =>
-                            layer.id === layerId ? { ...layer, name: newName } : layer
-                        )
-                    }
-                    : page
-            )
-        })
-    },
+    renameLayer: (layerId, newName) =>
+        set(s => ({
+            rootPage: updatePage(s.rootPage, s.activePageId, p => ({
+                ...p,
+                layers: p.layers.map(l =>
+                    l.id === layerId ? { ...l, name: newName } : l
+                ),
+            })),
+        })),
 
     reorderLayers: (dragIndex, hoverIndex) => {
         const activePage = get().getActivePage()
         if (!activePage) return
 
         const layers = [...activePage.layers]
-        const dragged = layers[dragIndex]
-        layers.splice(dragIndex, 1)
+        const [dragged] = layers.splice(dragIndex, 1)
         layers.splice(hoverIndex, 0, dragged)
+        const reordered = layers.map((l, i) => ({ ...l, zIndex: i }))
 
-        // Update zIndex based on new order
-        const reorderedLayers = layers.map((layer, index) => ({
-            ...layer,
-            zIndex: index
+        set(s => ({
+            rootPage: updatePage(s.rootPage, s.activePageId, p => ({
+                ...p,
+                layers: reordered,
+            })),
         }))
-
-        set({
-            pages: get().pages.map(page =>
-                page.id === activePage.id
-                    ? { ...page, layers: reorderedLayers }
-                    : page
-            )
-        })
     },
 
-    toggleLayerVisibility: (layerId) => {
-        const activePage = get().getActivePage()
-        if (!activePage) return
+    toggleLayerVisibility: (layerId) =>
+        set(s => ({
+            rootPage: updatePage(s.rootPage, s.activePageId, p => ({
+                ...p,
+                layers: p.layers.map(l =>
+                    l.id === layerId ? { ...l, visible: !l.visible } : l
+                ),
+            })),
+        })),
 
-        set({
-            pages: get().pages.map(page =>
-                page.id === activePage.id
-                    ? {
-                        ...page,
-                        layers: page.layers.map(layer =>
-                            layer.id === layerId
-                                ? { ...layer, visible: !layer.visible }
-                                : layer
-                        )
-                    }
-                    : page
-            )
-        })
-    },
+    updateLayerOpacity: (layerId, opacity) =>
+        set(s => ({
+            rootPage: updatePage(s.rootPage, s.activePageId, p => ({
+                ...p,
+                layers: p.layers.map(l =>
+                    l.id === layerId
+                        ? { ...l, opacity: Math.max(0, Math.min(1, opacity)) }
+                        : l
+                ),
+            })),
+        })),
 
-    updateLayerOpacity: (layerId, opacity) => {
-        const activePage = get().getActivePage()
-        if (!activePage) return
+    updateLayerZIndex: (layerId, zIndex) =>
+        set(s => ({
+            rootPage: updatePage(s.rootPage, s.activePageId, p => ({
+                ...p,
+                layers: p.layers.map(l =>
+                    l.id === layerId ? { ...l, zIndex } : l
+                ),
+            })),
+        })),
 
-        set({
-            pages: get().pages.map(page =>
-                page.id === activePage.id
-                    ? {
-                        ...page,
-                        layers: page.layers.map(layer =>
-                            layer.id === layerId
-                                ? { ...layer, opacity: Math.max(0, Math.min(1, opacity)) }
-                                : layer
-                        )
-                    }
-                    : page
-            )
-        })
-    },
+    addItemToLayer: (layerId, item) =>
+        set(s => ({
+            rootPage: updatePage(s.rootPage, s.activePageId, p => ({
+                ...p,
+                layers: p.layers.map(l =>
+                    l.id === layerId
+                        ? { ...l, items: [...(l.items ?? []), item] }
+                        : l
+                ),
+            })),
+        })),
 
-    updateLayerZIndex: (layerId, zIndex) => {
-        const activePage = get().getActivePage()
-        if (!activePage) return
+    removeItemFromLayer: (layerId, itemId) =>
+        set(s => ({
+            rootPage: updatePage(s.rootPage, s.activePageId, p => ({
+                ...p,
+                layers: p.layers.map(l =>
+                    l.id === layerId
+                        ? { ...l, items: (l.items ?? []).filter(i => i.id !== itemId) }
+                        : l
+                ),
+            })),
+        })),
 
-        set({
-            pages: get().pages.map(page =>
-                page.id === activePage.id
-                    ? {
-                        ...page,
-                        layers: page.layers.map(layer =>
-                            layer.id === layerId ? { ...layer, zIndex } : layer
-                        )
-                    }
-                    : page
-            )
-        })
-    },
+    updateLayerItems: (layerId, items) =>
+        set(s => ({
+            rootPage: updatePage(s.rootPage, s.activePageId, p => ({
+                ...p,
+                layers: p.layers.map(l =>
+                    l.id === layerId ? { ...l, items } : l
+                ),
+            })),
+        })),
 
-    addItemToLayer: (layerId, item) => {
-        const activePage = get().getActivePage()
-        if (!activePage) return
+    setActiveLayerId: (layerId) => set({ activeLayerId: layerId }),
 
-        set({
-            pages: get().pages.map(page =>
-                page.id === activePage.id
-                    ? {
-                        ...page,
-                        layers: page.layers.map(layer =>
-                            layer.id === layerId
-                                ? { ...layer, items: [...(layer.items || []), item] }
-                                : layer
-                        )
-                    }
-                    : page
-            )
-        })
-    },
-
-    removeItemFromLayer: (layerId, itemId) => {
-        const activePage = get().getActivePage()
-        if (!activePage) return
-
-        set({
-            pages: get().pages.map(page =>
-                page.id === activePage.id
-                    ? {
-                        ...page,
-                        layers: page.layers.map(layer =>
-                            layer.id === layerId
-                                ? {
-                                    ...layer,
-                                    items: (layer.items || []).filter(item => item.id !== itemId)
-                                }
-                                : layer
-                        )
-                    }
-                    : page
-            )
-        })
-    },
-
-    updateLayerItems: (layerId, items) => {
-        const activePage = get().getActivePage()
-        if (!activePage) return
-
-        set({
-            pages: get().pages.map(page =>
-                page.id === activePage.id
-                    ? {
-                        ...page,
-                        layers: page.layers.map(layer =>
-                            layer.id === layerId ? { ...layer, items } : layer
-                        )
-                    }
-                    : page
-            )
-        })
-    },
-
-    setActiveLayerId: (layerId) => {
-        set({ activeLayerId: layerId })
-    },
     setBackgroundItem: (backgroundItem) => {
         if (!backgroundItem) return
-
-        set({
-            pages: get().pages.map(page => ({
-                ...page,
-                layers: page.layers.map(layer =>
-                    layer.id === 'default'
-                        ? { ...layer, items: [backgroundItem] }
-                        : layer
-                )
-            }))
+        // Applies to ALL pages in the tree
+        const applyToAll = (page: Page): Page => ({
+            ...page,
+            layers: page.layers.map(l =>
+                l.id === 'default' ? { ...l, items: [backgroundItem] } : l
+            ),
+            childrenPages: page.childrenPages.map(applyToAll),
         })
-    }
+        set(s => ({ rootPage: applyToAll(s.rootPage) }))
+    },
 }))

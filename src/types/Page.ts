@@ -5,6 +5,8 @@ import type { Layer } from "./Layer"
 export type Page = {
   id: string
   name: string
+  parentPageId: string | null // null if this is root page
+  childrenPages: Page[]
   images?: CanvasImage[]
   graphicsItems?: GraphicsItem[]
   layers: Layer[]
