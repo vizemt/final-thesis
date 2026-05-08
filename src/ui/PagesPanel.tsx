@@ -1,203 +1,51 @@
 import { Copy, Trash2, Edit2, GitBranch, Plus, ChevronRight } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Page } from '../types/Page'
+import { PageCell } from './components/PageCell'
 
 type PagesPanelProps = {
   rootPage: Page
   activePageId: string
   onSelectPage: (id: string) => void
-  onAddPage: () => string
-  onAddBranch: (parentId: string) => void
-  onDuplicatePage: (pageId: string) => void
-  onDeletePage: (pageId: string) => void
+  onAddPage: () => void
+  onAddBranch: () => void
+  onDuplicatePage: () => void
+  onDeletePage: () => void
   onRenamePage: (pageId: string, newName: string) => void
 }
 
-type PageNodeProps = {
-  page: Page
-  depth: number
-  activePageId: string
-  totalPages: number
-  editingId: string | null
-  editName: string
-  onSelectPage: (id: string) => void
-  onAddBranch: (parentId: string) => void
-  onDuplicatePage: (pageId: string) => void
-  onDeletePage: (pageId: string) => void
-  onStartRename: (page: Page) => void
-  onCommitRename: (pageId: string) => void
-  onCancelRename: () => void
-  onEditNameChange: (name: string) => void
+function findPage(root: Page, id: string): Page | undefined {
+  if (root.id === id) return root;
+  for (const child of root.childrenPages) {
+    const found = findPage(child, id);
+    if (found) return found;
+  }
+  return undefined;
 }
 
-function PageNode({
-  page,
-  depth,
-  activePageId,
-  totalPages,
-  editingId,
-  editName,
-  onSelectPage,
-  onAddBranch,
-  onDuplicatePage,
-  onDeletePage,
-  onStartRename,
-  onCommitRename,
-  onCancelRename,
-  onEditNameChange,
-}: PageNodeProps) {
-  const [expanded, setExpanded] = useState(true)
-  const hasChildren = page.childrenPages.length > 0
-  const isActive = activePageId === page.id
-  const isEditing = editingId === page.id
-
-  return (
-    <div style={{ paddingLeft: depth === 0 ? 0 : 12 }}>
-      {/* Branch connector line */}
-      <div style={{ position: 'relative' }}>
-        {depth > 0 && (
-          <div style={{
-            position: 'absolute',
-            left: -12,
-            top: 0,
-            bottom: 0,
-            width: 1,
-            background: 'var(--color-border-tertiary)',
-          }} />
-        )}
-
-        <div
-          className={`item ${isActive ? 'active' : ''}`}
-          onClick={() => onSelectPage(page.id)}
-          style={{ paddingLeft: 4 }}
-        >
-          {/* Expand/collapse toggle */}
-          <button
-            style={{
-              visibility: hasChildren ? 'visible' : 'hidden',
-              background: 'none',
-              border: 'none',
-              padding: '0 2px',
-              cursor: 'pointer',
-              color: 'var(--color-text-tertiary)',
-              display: 'flex',
-              alignItems: 'center',
-              flexShrink: 0,
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              setExpanded(v => !v)
-            }}
-          >
-            <ChevronRight
-              size={12}
-              style={{
-                transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                transition: 'transform 0.15s',
-              }}
-            />
-          </button>
-
-          <div className="item-info" style={{ flex: 1, minWidth: 0 }}>
-            {isEditing ? (
-              <input
-                type="text"
-                className="item-edit-input"
-                value={editName}
-                onChange={(e) => onEditNameChange(e.target.value)}
-                onBlur={() => onCommitRename(page.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onCommitRename(page.id)
-                  if (e.key === 'Escape') onCancelRename()
-                }}
-                autoFocus
-                onClick={(e) => e.stopPropagation()}
-              />
-            ) : (
-              <>
-                <span className="item-title" style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}>
-                  {page.name}
-                </span>
-                <span className="item-subtitle">
-                  {page.images?.length ?? 0} items
-                  {hasChildren && ` · ${page.childrenPages.length} branch${page.childrenPages.length !== 1 ? 'es' : ''}`}
-                </span>
-              </>
-            )}
-          </div>
-
-          <div className="item-actions">
-            <button
-              onClick={(e) => { e.stopPropagation(); onAddBranch(page.id) }}
-              title="Add branch"
-            >
-              <GitBranch size={14} />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onStartRename(page) }}
-              title="Rename"
-            >
-              <Edit2 size={14} />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onDuplicatePage(page.id) }}
-              title="Duplicate"
-            >
-              <Copy size={14} />
-            </button>
-            {totalPages > 1 && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onDeletePage(page.id) }}
-                title="Delete"
-                className="delete-btn"
-              >
-                <Trash2 size={14} />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Children */}
-      {hasChildren && expanded && (
-        <div style={{ position: 'relative' }}>
-          {/* Vertical guide line for this level */}
-          <div style={{
-            position: 'absolute',
-            left: 16,
-            top: 0,
-            bottom: 0,
-            width: 1,
-            background: 'var(--color-border-tertiary)',
-            pointerEvents: 'none',
-          }} />
-          {page.childrenPages.map(child => (
-            <PageNode
-              key={child.id}
-              page={child}
-              depth={depth + 1}
-              activePageId={activePageId}
-              totalPages={totalPages}
-              editingId={editingId}
-              editName={editName}
-              onSelectPage={onSelectPage}
-              onAddBranch={onAddBranch}
-              onDuplicatePage={onDuplicatePage}
-              onDeletePage={onDeletePage}
-              onStartRename={onStartRename}
-              onCommitRename={onCommitRename}
-              onCancelRename={onCancelRename}
-              onEditNameChange={onEditNameChange}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  )
+interface GridCell {
+  row: number; // 1-based depth
+  col: number; // 0-based branch index (0 = col A)
+  page: Page;
+}
+ 
+function buildGrid(root: Page): GridCell[] {
+  const result: GridCell[] = [];
+  let nextCol = 1;
+ 
+  function dfs(node: Page, depth: number, col: number) {
+    result.push({ row: depth, col, page: node });
+    if (node.childrenPages.length === 0) return;
+    // First child continues same column (main branch)
+    dfs(node.childrenPages[0], depth + 1, col);
+    // Additional children get new branch columns
+    for (let i = 1; i < node.childrenPages.length; i++) {
+      dfs(node.childrenPages[i], depth + 1, nextCol++);
+    }
+  }
+ 
+  dfs(root, 1, 0);
+  return result;
 }
 
 function countPages(page: Page): number {
@@ -214,50 +62,72 @@ export default function PagesPanel({
   onDeletePage,
   onRenamePage,
 }: PagesPanelProps) {
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editName, setEditName] = useState('')
 
-  const totalPages = countPages(rootPage)
+    const cells = buildGrid(rootPage);
 
-  const handleStartRename = (page: Page) => {
-    setEditingId(page.id)
-    setEditName(page.name)
-  }
+    const maxRow = cells.reduce((m, c) => Math.max(m, c.row), 1);
+    const maxCol = cells.reduce((m, c) => Math.max(m, c.col), 0);
 
-  const handleCommitRename = (pageId: string) => {
-    if (editName.trim()) onRenamePage(pageId, editName.trim())
-    setEditingId(null)
-  }
+    const cellMap: Record<string, Page> = {};
+    cells.forEach((c) => { cellMap[`${c.row},${c.col}`] = c.page; });
 
-  return (
-    <div className="panel">
-      <div className="panel-header">
-        <h3>Pages</h3>
-        <button onClick={() => onAddPage()}>
-          <Plus size={14} /> Add page
-        </button>
-      </div>
+    const colLabels = Array.from({ length: maxCol + 1 }, (_, i) =>
+        String.fromCharCode(65 + i)
+    );
+    const rowLabels = Array.from({ length: maxRow }, (_, i) => i + 1);
 
-      <div className="panel-content">
-        <div className="item-list">
-          <PageNode
-            page={rootPage}
-            depth={0}
-            activePageId={activePageId}
-            totalPages={totalPages}
-            editingId={editingId}
-            editName={editName}
-            onSelectPage={onSelectPage}
-            onAddBranch={onAddBranch}
-            onDuplicatePage={onDuplicatePage}
-            onDeletePage={onDeletePage}
-            onStartRename={handleStartRename}
-            onCommitRename={handleCommitRename}
-            onCancelRename={() => setEditingId(null)}
-            onEditNameChange={setEditName}
-          />
-        </div>
-      </div>
-    </div>
-  )
+    // const handleAddPage = (pageId: string) => {
+    //     const deepest = (node: Page): Page =>
+    //         node.childrenPages.length === 0 ? node : deepest(node.childrenPages[0]);
+    //     const target = findPage(rootPage, pageId);
+    //     if (!target) return;
+    //     onAddPage(pageId);
+    // };
+
+    useEffect(() => {
+      console.log(rootPage);
+    }, [rootPage]);
+    
+    return (
+        <div className="panel">
+            <div className="panel-header">
+                <h3>Pages</h3>
+                <button onClick={onAddPage} title="Add page">+Page</button>
+                <button onClick={onAddBranch} title="Add branch">+Branch</button>
+                <button onClick={onDeletePage} title="Duplicate">Delete</button>
+            </div>
+            <div className="plotgrid-wrap">
+                <table className="plotgrid-table">
+                    <thead>
+                        <tr>
+                            <th className="plotgrid-corner" />
+                            {colLabels.map((label) => (
+                                <th key={label} className="plotgrid-col-header">{label}</th> // here
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rowLabels.map((row) => (
+                            <tr key={row}>
+                                <td className="plotgrid-row-label">{row}</td>
+                                {colLabels.map((_, colIdx) => {
+                                    const page = cellMap[`${row},${colIdx}`];
+                                    if (!page) return <td key={`empty-${row}-${colIdx}`} className="plotgrid-empty" />;
+                                    return (
+                                        <PageCell
+                                            key={page.id}
+                                            page={page}
+                                            isRoot={page.id === rootPage.id}
+                                            isActive={page.id === activePageId}
+                                            onSelect={() => onSelectPage(page.id)}
+                                            onRename={(name) => onRenamePage(page.id, name)}
+                                        />
+                                    );
+                                })}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>);
 }

@@ -21,7 +21,7 @@ type PageStore = {
 
     // page actions
     setActivePageId: (id: string) => void
-    addPage: (backgroundItem?: GraphicsItem, name?: string) => string
+    addPage: (backgroundItem?: GraphicsItem, parentId?: string) => string
     addBranch: (backgroundItem?: GraphicsItem, parentId?: string) => string
     duplicatePage: (pageId: string) => void
     deletePage: (pageId: string) => boolean
@@ -41,7 +41,7 @@ type PageStore = {
     removeLayer: (layerId: string) => void
     duplicateLayer: (layerId: string) => void
     renameLayer: (layerId: string, newName: string) => void
-    reorderLayers: (dragIndex: number, hoverIndex: number) => void
+    reorderLayers: (dragLayerId: string, hoverLayerId: string) => void
     toggleLayerVisibility: (layerId: string) => void
     updateLayerOpacity: (layerId: string, opacity: number) => void
     updateLayerZIndex: (layerId: string, zIndex: number) => void
@@ -96,11 +96,11 @@ export const usePageStore = create<PageStore>((set, get) => ({
 
     // Adds a top-level child page to the root.
     // Returns the new page's id.
-    addPage: (backgroundItem, name) => {
+    addPage: (backgroundItem) => {
         const total = countPages(get().rootPage)
         const newPage: Page = {
             id: crypto.randomUUID(),
-            name: name ?? `Page ${total + 1}`,
+            name: `Page ${total + 1}`,
             images: [],
             layers: [makeDefaultLayer(backgroundItem)],
             order: total,
@@ -116,7 +116,6 @@ export const usePageStore = create<PageStore>((set, get) => ({
             activePageId: newPage.id,
             activeLayerId: null,
         }))
-
         return newPage.id
     },
 
@@ -326,19 +325,32 @@ export const usePageStore = create<PageStore>((set, get) => ({
             })),
         })),
 
-    reorderLayers: (dragIndex, hoverIndex) => {
+    reorderLayers: (dragLayerId, hoverLayerId) => {
         const activePage = get().getActivePage()
         if (!activePage) return
 
         const layers = [...activePage.layers]
-        const [dragged] = layers.splice(dragIndex, 1)
-        layers.splice(hoverIndex, 0, dragged)
+        const dragLayer = activePage.layers.find(l => l.id === dragLayerId)
+        const hoverLayer = activePage.layers.find(l => l.id === hoverLayerId)
+        const [dragged] = layers.splice(dragLayer.zIndex, 1)
+        layers.splice(hoverLayer.zIndex, 0, dragged)
         const reordered = layers.map((l, i) => ({ ...l, zIndex: i }))
+
+        // Build a quick lookup map of updated layers
+        const layerMap = Object.fromEntries(reordered.map(l => [l.id, l]))
+
+        // Sync updated layer (with new zIndex) back onto each image
+        const updatedImages = (activePage.images ?? []).map(img =>
+            img.layer && layerMap[img.layer.id]
+                ? { ...img, layer: layerMap[img.layer.id] }
+                : img
+        )
 
         set(s => ({
             rootPage: updatePage(s.rootPage, s.activePageId, p => ({
                 ...p,
                 layers: reordered,
+                images: updatedImages,
             })),
         }))
     },

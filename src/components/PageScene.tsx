@@ -46,6 +46,7 @@ export function PageScene({
       ref={containerRef}
       eventMode="static"
       interactive={true}
+      sortableChildren={true}
     >
 
       {images.filter(isCanvasImage).map(img => (

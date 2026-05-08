@@ -1,4 +1,4 @@
-import { Layers, Image as ImageIcon, FileText } from "lucide-react"
+import { Layers, Image as ImageIcon, FileText, Download } from "lucide-react"
 import type { ToolbarItem } from "../types/ToolbarItem"
 
 type Props = {
@@ -30,6 +30,13 @@ export default function Toolbar({ activePanel, onPanelChange }: Props) {
         >
           <FileText size={16} />
           <span>Pages</span>
+        </button>
+        <button 
+          className={`tab-button ${activePanel === 'export' ? 'active' : ''}`}
+          onClick={() => onPanelChange('export')}
+        >
+          <Download size={16} />
+          <span>Export</span>
         </button>
       </div>
     </div>

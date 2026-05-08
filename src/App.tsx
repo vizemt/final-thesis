@@ -12,6 +12,7 @@ import PagesPanel from "./ui/PagesPanel"
 import type { GraphicsItem } from "./types/GraphicsItem"
 import { usePageStore } from "./store/pageStore"
 import { getNextZIndex } from "./store/newId"
+import ExportPanel from "./ui/ExportPanel"
 
 export default function App() {
   const [activePanel, setActivePanel] = useState<ToolbarItem>('library')
@@ -241,8 +242,8 @@ export default function App() {
           onToggleLock={(id) => {
             //toggle here
           }}
+          onReorderLayers={reorderLayers}
           onRemoveLayer={handleRemoveLayer}
-          onMoveLayer={handleMoveLayer}
           onOpacityChange={updateLayerOpacity}
         />
       )}
@@ -252,10 +253,10 @@ export default function App() {
           rootPage={rootPage}
           activePageId={activePageId}
           onSelectPage={setActivePageId}
-          onAddPage={() => addPage(backgroundItem)}
-          onAddBranch={(parentId) => addBranch(backgroundItem, parentId)}
-          onDuplicatePage={duplicatePage}
-          onDeletePage={handleDeletePage}                                                   
+          onAddPage={() => addPage(backgroundItem, activePageId)}
+          onAddBranch={() => addBranch(backgroundItem, activePageId)}
+          onDuplicatePage={() => duplicatePage(activePageId)}
+          onDeletePage={() => handleDeletePage}                                                   
           onRenamePage={renamePage}
         />
       )}
@@ -265,6 +266,11 @@ export default function App() {
           images={libraryImages}
           onUpload={handleUpload}
           onSelect={addImageToCanvas}
+        />
+      )}
+
+      {activePanel === 'export' && (
+        <ExportPanel
         />
       )}
 

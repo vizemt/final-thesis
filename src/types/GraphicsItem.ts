@@ -12,4 +12,5 @@ export interface GraphicsItem {
     y: number
   }
   layer?: Layer
+  linkToNextPageId?: string
 }

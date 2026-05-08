@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { Layer } from '../types/Layer'
-import { Eye, EyeOff, Lock, Unlock, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
+import { Eye, EyeOff, Lock, Unlock, Trash2, GripVertical } from 'lucide-react'
 
 type LayerPanelProps = {
   layers: Layer[]
@@ -9,8 +9,8 @@ type LayerPanelProps = {
   onToggleVisibility: (layerId: string) => void
   onToggleLock: (layerId: string) => void
   onRemoveLayer: (layerId: string) => void
-  onMoveLayer: (layerId: string, direction: 'up' | 'down') => void
   onOpacityChange: (layerId: string, opacity: number) => void
+  onReorderLayers: (draggedLayerId: string, targetLayerId: string) => void
 }
 
 export const LayerPanel: React.FC<LayerPanelProps> = ({
@@ -20,42 +20,74 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
   onToggleVisibility,
   onToggleLock,
   onRemoveLayer,
-  onMoveLayer,
   onOpacityChange,
+  onReorderLayers,
 }) => {
+  const [dragOverLayerId, setDragOverLayerId] = useState<string | null>(null)
+
   // Sort layers by zIndex descending for display (highest zIndex on top)
   const sortedLayers = [...layers].sort((a, b) => b.zIndex - a.zIndex)
+
+  const handleDragStart = (e: React.DragEvent, layerId: string) => {
+    e.dataTransfer.setData('text/plain', layerId)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent, layerId: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverLayerId(layerId)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverLayerId(null)
+  }
+
+  const handleDrop = (e: React.DragEvent, targetLayerId: string) => {
+    e.preventDefault()
+    const draggedLayerId = e.dataTransfer.getData('text/plain')
+    
+    if (draggedLayerId !== targetLayerId) {
+      onReorderLayers(draggedLayerId, targetLayerId)
+    }
+    
+    setDragOverLayerId(null)
+  }
 
   return (
     <div className="panel">
       <div className="panel-header">
         <h3>Layers</h3>
-        <button>
-          button
-        </button>
       </div>
       
       <div className="panel-content">
         <div className="item-list">
           {sortedLayers.map(layer => {
-            // Determine if layer can be moved up (not the highest zIndex)
-            const isHighest = layer.id !== 'default' && 
-              Math.max(...layers.filter(l => l.id !== 'default').map(l => l.zIndex)) === layer.zIndex
-            
-            // Determine if layer can be moved down (not the lowest above default)
-            const nonDefaultLayers = layers.filter(l => l.id !== 'default')
-            const lowestNonDefaultZIndex = nonDefaultLayers.length > 0 
-              ? Math.min(...nonDefaultLayers.map(l => l.zIndex))
-              : 0
-            const isLowest = layer.id !== 'default' && layer.zIndex === lowestNonDefaultZIndex
-
             return (
               <div
                 key={layer.id}
-                className={`item layer-item ${activeLayerId === layer.id ? 'active' : ''} ${layer.locked ? 'locked' : ''}`}
+                className={`item layer-item ${activeLayerId === layer.id ? 'active' : ''} ${layer.locked ? 'locked' : ''} ${dragOverLayerId === layer.id ? 'drag-over' : ''}`}
                 onClick={() => onSelectLayer(layer.id)}
+                draggable={!layer.locked && layer.id !== 'default'}
+                onDragStart={(e) => handleDragStart(e, layer.id)}
+                onDragOver={(e) => handleDragOver(e, layer.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, layer.id)}
               >
                 <div className="layer-controls">
+                  {/* Drag handle */}
+                  {layer.id !== 'default' && !layer.locked && (
+                    <div 
+                      className="drag-handle"
+                      style={{ cursor: 'grab', marginRight: '8px', display: 'flex', alignItems: 'center' }}
+                      onDragStart={(e) => handleDragStart(e, layer.id)}
+                    >
+                      <GripVertical size={16} />
+                    </div>
+                  )}
+                  
+                  <span className="layer-name">{layer.name}</span>
+                  
                   <button 
                     onClick={(e) => { e.stopPropagation(); onToggleVisibility(layer.id); }}
                     className="layer-btn"
@@ -69,48 +101,17 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
                   >
                     {layer.locked ? <Lock size={16} /> : <Unlock size={16} />}
                   </button>
-                  
-                  <span className="layer-name">{layer.name}</span>
                 </div>
                 
                 <div className="layer-actions">
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={layer.opacity}
-                    onChange={(e) => onOpacityChange(layer.id, parseFloat(e.target.value))}
-                    onClick={(e) => e.stopPropagation()}
-                    disabled={layer.locked}
-                  />
-                  
                   {layer.id !== 'default' && (
-                    <>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); onMoveLayer(layer.id, 'up'); }}
-                        disabled={isHighest}
-                        title={isHighest ? "Already at top" : "Move up"}
-                      >
-                        <ArrowUp size={16} />
-                      </button>
-                      
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); onMoveLayer(layer.id, 'down'); }}
-                        disabled={isLowest}
-                        title={isLowest ? "Already at bottom" : "Move down"}
-                      >
-                        <ArrowDown size={16} />
-                      </button>
-                      
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); onRemoveLayer(layer.id); }}
-                        className="delete-btn"
-                        title="Delete layer"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onRemoveLayer(layer.id); }}
+                      className="delete-btn"
+                      title="Delete layer"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   )}
                 </div>
               </div>

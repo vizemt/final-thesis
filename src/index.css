@@ -141,7 +141,7 @@ button:focus-visible {
   top: 0;
   bottom: 0;
   right: 0;
-  width: 300px;
+  width: 30%;
   background: var(--color-bg-white);
   box-shadow: -2px 0 10px var(--color-shadow-sm);
   z-index: var(--z-panel);
@@ -196,12 +196,12 @@ button:focus-visible {
 
 .item:hover {
   background: var(--color-bg-hover);
-  border-color: var(--color-border-hover);
+  border-color: var(--color-border-focus);
 }
 
 .item.active {
   background: var(--color-primary-bg);
-  border-color: var(--color-primary-border);
+  border-color: var(--color-border-focus);
 }
 
 .item-info {
@@ -441,6 +441,92 @@ button:focus-visible {
     padding: var(--spacing-md);
   }
 }
+
+/* PageGrid */
+ 
+.plotgrid-wrap {
+  overflow: auto;
+}
+ 
+.plotgrid-table {
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+ 
+.plotgrid-corner,
+.plotgrid-col-header,
+.plotgrid-row-label {
+  width: 40px;
+  padding: 4px 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  background: #fafafa;
+  border: 1px solid #ddd;
+}
+ 
+.plotgrid-col-header,
+.plotgrid-corner {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+ 
+.plotgrid-row-label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+ 
+.plotgrid-empty {
+  width: 160px;
+  min-height: 80px;
+  border: 1px solid #eee;
+  background: #fff;
+}
+ 
+.plotgrid-cell {
+  width: 160px;
+  min-height: 80px;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  vertical-align: top;
+  cursor: pointer;
+  background: #fff;
+}
+ 
+.plotgrid-cell--active {
+  background: var(--color-primary-bg);
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -2px;
+}
+ 
+.plotgrid-title {
+  font-size: 13px;
+  margin-bottom: 6px;
+  word-break: break-word;
+}
+ 
+.plotgrid-rename {
+  width: 100%;
+  font-size: 13px;
+  margin-bottom: 6px;
+  box-sizing: border-box;
+}
+ 
+.plotgrid-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+ 
+.plotgrid-actions button {
+  font-size: 11px;
+  padding: 2px 5px;
+  cursor: pointer;
+}
+ 
 
 /* Utility Classes */
 .hidden {
