@@ -5,15 +5,21 @@ import { PageScene } from "./PageScene"
 import type { CanvasImage } from "../types/CanvasImage"
 import Canvas from "./Canvas"
 import type { GraphicsItem } from "../types/GraphicsItem"
+import type { Hotspot } from "../types/Hotspot"
+// todo include resize controllers
 
 extend({
   Container: PIXI.Container,
 })
 
 type WorkspaceProps = {
+  readonly: boolean
+  hotspots: Hotspot[]
   images: (CanvasImage | GraphicsItem)[]
   selectedId: string | null
   multiSelectedIds: Set<string>
+  onExit: () => void
+  onHotspotAction: (action) => void
   onSelect: (id: string, multi: boolean) => void
   onImageDelete: (id: string) => void
   onImageUpdate: (imageId: string, updates: CanvasImage) => void
@@ -25,9 +31,12 @@ type WorkspaceProps = {
 }
 
 export default function Workspace({ 
+  readonly,
   images, 
   selectedId, 
   multiSelectedIds, 
+  onExit,
+  onHotspotAction,
   onSelect,
   onImageDelete,
   onImageUpdate,
@@ -49,7 +58,7 @@ export default function Workspace({
   }, [workspaceHeight, canvasParams.height])
 
   return (
-    <div className="canvas-container">
+    <div className="canvas-wrapper">
       <Application
         width={workspaceWidth} 
         height={workspaceHeight} 
@@ -76,6 +85,7 @@ export default function Workspace({
           onImageUpdate={onImageUpdate}
         />
       </Application>
+    
     </div>
   )
 }

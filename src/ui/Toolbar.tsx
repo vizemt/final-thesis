@@ -1,4 +1,4 @@
-import { Layers, Image as ImageIcon, FileText, Download } from "lucide-react"
+import { Layers, Image as ImageIcon, FileText, Download, View } from "lucide-react"
 import type { ToolbarItem } from "../types/ToolbarItem"
 
 type Props = {

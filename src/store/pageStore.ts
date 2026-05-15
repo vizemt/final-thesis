@@ -72,6 +72,7 @@ export const usePageStore = create<PageStore>((set, get) => ({
         order: 0,
         parentPageId: null,
         childrenPages: [],
+        hotspots: []
     },
     activePageId: DEFAULT_PAGE_ID,
     activeLayerId: null,
@@ -97,22 +98,24 @@ export const usePageStore = create<PageStore>((set, get) => ({
     // Adds a top-level child page to the root.
     // Returns the new page's id.
     addPage: (backgroundItem) => {
-        const total = countPages(get().rootPage)
+        const activePage = findPage(get().rootPage, get().activePageId)
+        const total = countPages(get().rootPage) // TODO fix order
         const newPage: Page = {
             id: crypto.randomUUID(),
             name: `Page ${total + 1}`,
             images: [],
             layers: [makeDefaultLayer(backgroundItem)],
             order: total,
-            parentPageId: get().rootPage.id,
+            parentPageId: activePage.id,
             childrenPages: [],
+            hotspots: []
         }
 
         set(s => ({
-            rootPage: {
-                ...s.rootPage,
-                childrenPages: [...s.rootPage.childrenPages, newPage],
-            },
+            rootPage: updatePage(s.rootPage, activePage.id, p => ({
+                ...p,
+                childrenPages: [...p.childrenPages, newPage],
+            })),
             activePageId: newPage.id,
             activeLayerId: null,
         }))
@@ -134,6 +137,7 @@ export const usePageStore = create<PageStore>((set, get) => ({
             order: parent.childrenPages.length,
             parentPageId: resolvedParentId,
             childrenPages: [],
+            hotspots: []
         }
 
         set(s => ({

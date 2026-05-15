@@ -1,5 +1,6 @@
 import type { CanvasImage } from "./CanvasImage"
 import type { GraphicsItem } from "./GraphicsItem"
+import type { Hotspot } from "./Hotspot"
 import type { Layer } from "./Layer"
 
 export type Page = {
@@ -11,6 +12,7 @@ export type Page = {
   graphicsItems?: GraphicsItem[]
   layers: Layer[]
   order: number
+  hotspots: Hotspot[]
   thumbnail?: string
   isVisible?: boolean
   isMaster?: boolean

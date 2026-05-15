@@ -13,8 +13,10 @@ import type { GraphicsItem } from "./types/GraphicsItem"
 import { usePageStore } from "./store/pageStore"
 import { getNextZIndex } from "./store/newId"
 import ExportPanel from "./ui/ExportPanel"
+import { PlayerControls } from "./ui/PlayerControls"
 
 export default function App() {
+  const [mode, setMode] = useState<'editor' | 'player'>('editor')
   const [activePanel, setActivePanel] = useState<ToolbarItem>('library')
   const [libraryImages, setLibraryImages] = useState<LibraryImage[]>([])
   
@@ -184,7 +186,6 @@ export default function App() {
     updateImage(activePageId, imageId, updates)
   }, [activePageId, updateImage])
 
-
   // Handle layer deletion with image cleanup
   const handleRemoveLayer = useCallback((layerId: string) => {
     // Remove all images in this layer
@@ -228,61 +229,73 @@ export default function App() {
 
   return (
     <div className="editor">
-      <Toolbar 
-        activePanel={activePanel} 
-        onPanelChange={setActivePanel} 
-      />
-      
-      {activePanel === 'layers' && (
-        <LayerPanel
-          layers={activePageLayers}
-          activeLayerId={activeLayerId}
-          onSelectLayer={handleSelectLayer}
-          onToggleVisibility={toggleLayerVisibility}
-          onToggleLock={(id) => {
-            //toggle here
-          }}
-          onReorderLayers={reorderLayers}
-          onRemoveLayer={handleRemoveLayer}
-          onOpacityChange={updateLayerOpacity}
-        />
-      )}
+      {mode === 'editor' && (
+        <>
+          <Toolbar 
+            activePanel={activePanel} 
+            onPanelChange={setActivePanel} />
 
-      {activePanel === 'pages' && (
-        <PagesPanel 
-          rootPage={rootPage}
-          activePageId={activePageId}
-          onSelectPage={setActivePageId}
-          onAddPage={() => addPage(backgroundItem, activePageId)}
-          onAddBranch={() => addBranch(backgroundItem, activePageId)}
-          onDuplicatePage={() => duplicatePage(activePageId)}
-          onDeletePage={() => handleDeletePage}                                                   
-          onRenamePage={renamePage}
-        />
-      )}
-      
-      {activePanel === 'library' && (
-        <LibraryPanel
-          images={libraryImages}
-          onUpload={handleUpload}
-          onSelect={addImageToCanvas}
-        />
-      )}
+          {activePanel === 'layers' && <LayerPanel
+            layers={activePageLayers}
+            activeLayerId={activeLayerId}
+            onSelectLayer={handleSelectLayer}
+            onToggleVisibility={toggleLayerVisibility}
+            onToggleLock={(id) => {
+              //toggle here
+            }}
+            onReorderLayers={reorderLayers}
+            onRemoveLayer={handleRemoveLayer}
+            onOpacityChange={updateLayerOpacity}
+          />}
 
-      {activePanel === 'export' && (
-        <ExportPanel
-        />
+          {activePanel === 'pages' && <PagesPanel 
+            rootPage={rootPage}
+            activePageId={activePageId}
+            onSelectPage={setActivePageId}
+            onAddPage={() => addPage(backgroundItem, activePageId)}
+            onAddBranch={() => addBranch(backgroundItem, activePageId)}
+            onDuplicatePage={() => duplicatePage(activePageId)}
+            onDeletePage={() => handleDeletePage}                                                   
+            onRenamePage={renamePage}
+          />}
+
+          {activePanel === 'library' && <LibraryPanel
+            images={libraryImages}
+            onUpload={handleUpload}
+            onSelect={addImageToCanvas}
+          />}
+
+          {activePanel === 'export' && (
+            <ExportPanel
+              onModeChange={() => setMode('player')}
+            />
+          )}
+        </>
       )}
 
       <Workspace 
+        readonly={mode === 'player'}
+        hotspots={activePage?.hotspots ?? []}
+        onHotspotAction={(action) => {
+          if (action.type === 'navigate') setActivePageId(action.targetPageId)
+        }}
+        onExit={() => setMode('editor')}
         images={activePageImages}
-        selectedId={selectedId}
+        selectedId={selectedId} 
         multiSelectedIds={multiSelectedIds}
         onSelect={select}
         onImageDelete={handleImageDelete}
         onImageUpdate={handleImageUpdate}
         canvasParams={canvasParams}
       />
+
+      {mode === "player" && (
+        <PlayerControls
+          activePage={activePage}
+          onNavigate={(pageId) => setActivePageId(pageId)}
+          onExit={() => setMode('editor')}
+        />
+      )}
     </div>
   )
 }
